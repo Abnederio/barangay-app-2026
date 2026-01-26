@@ -1,0 +1,103 @@
+<div class="feedback-container">
+  <h1>Feedback</h1>
+
+  @if (!isAdmin) {
+    <div class="submit-section">
+      <h2>Submit Feedback</h2>
+      @if (showSuccessAlert && successMessage) {
+        <div class="success-alert">
+          <strong>✓ Success!</strong> {{ successMessage }}
+        </div>
+      }
+      @if (formErrors['general']) {
+        <div class="error-message">{{ formErrors['general'] }}</div>
+      }
+      <form (ngSubmit)="submitFeedback()">
+        <div class="form-group">
+          <label>Your Feedback *</label>
+          <textarea
+            [(ngModel)]="message"
+            name="message"
+            rows="6"
+            placeholder="Please share your thoughts, suggestions, or concerns..."
+            [class.error]="formErrors['message']"
+            required
+          ></textarea>
+          @if (formErrors['message']) {
+            <span class="error-text">{{ formErrors['message'] }}</span>
+          }
+        </div>
+        <button type="submit" class="btn-primary">Submit Feedback</button>
+      </form>
+    </div>
+  }
+
+  @if (isAdmin) {
+    <div class="admin-section">
+      <h2>Submitted Feedback</h2>
+      <div class="search-bar">
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          (input)="onSearchChange()"
+          placeholder="🔍 Search feedback..."
+          class="search-input"
+        />
+      </div>
+      @if (isLoading) {
+        <div class="loading">Loading feedback...</div>
+      } @else if (error) {
+        <div class="error">{{ error }}</div>
+      } @else if (filteredFeedback.length === 0) {
+        <div class="no-feedback">
+          @if (searchQuery) {
+            <p>No feedback found matching "{{ searchQuery }}"</p>
+          } @else {
+            <p>No feedback submitted yet.</p>
+          }
+        </div>
+      } @else {
+        <div class="feedback-list">
+          @for (item of filteredFeedback; track item.id) {
+            <div class="feedback-card">
+              <p class="message">{{ item.message }}</p>
+              <div class="meta">
+                @if (item.user) {
+                  <span><strong>From:</strong> {{ item.user.fullName }} ({{ item.user.email }})</span>
+                }
+                <span class="date">{{ formatDate(item.submittedAt) }}</span>
+              </div>
+              @if (item.adminReply) {
+                <div class="admin-reply">
+                  <strong>Admin Reply:</strong>
+                  <p>{{ item.adminReply }}</p>
+                  @if (item.repliedAt) {
+                    <span class="reply-date">Replied on: {{ formatDate(item.repliedAt) }}</span>
+                  }
+                </div>
+              }
+              <div class="admin-actions">
+                @if (replyingTo === item.id) {
+                  <div class="reply-form">
+                    <textarea
+                      [(ngModel)]="replyText[item.id]"
+                      placeholder="Type your reply here..."
+                      rows="3"
+                    ></textarea>
+                    <div class="reply-buttons">
+                      <button (click)="submitReply(item.id)" class="btn-primary">Submit Reply</button>
+                      <button (click)="cancelReply()" class="btn-secondary">Cancel</button>
+                    </div>
+                  </div>
+                } @else {
+                  <button (click)="startReply(item.id)" class="btn-reply">Reply</button>
+                }
+                <button (click)="deleteFeedback(item.id)" class="btn-delete">Delete</button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

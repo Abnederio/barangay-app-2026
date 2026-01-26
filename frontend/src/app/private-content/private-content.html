@@ -1,0 +1,21 @@
+<div class="dashboard-container">
+  @if (loading) {
+    <div class="loader">Loading Profile...</div>
+  } @else if (user) {
+    <div class="id-card">
+      <img [src]="user.pictureUrl" alt="Profile" class="profile-pic">
+      <div class="info">
+        <h2>Welcome, {{ user.name }}</h2>
+        <p class="status">✅ Verified Resident</p>
+        <p class="role">Resident ID: {{ user.name.split(' ')[0] }}-2026</p>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="action-btn">📄 Request Clearance</button>
+      <button class="action-btn">📢 Report Incident</button>
+    </div>
+  } @else {
+    <p class="error">Failed to load user data. Please login again.</p>
+  }
+</div>

@@ -1,0 +1,152 @@
+<div class="events-container">
+  <div class="header">
+    <h1>🎉 Upcoming Events</h1>
+    @if (isAdmin) {
+      <button (click)="showCreateForm = !showCreateForm" class="btn-primary">
+        {{ showCreateForm ? 'Cancel' : '+ Post Event' }}
+      </button>
+    }
+  </div>
+
+  <div class="search-bar">
+    <input
+      type="text"
+      [(ngModel)]="searchQuery"
+      (input)="onSearchChange()"
+      placeholder="🔍 Search events..."
+      class="search-input"
+    />
+  </div>
+
+  @if (showCreateForm && isAdmin) {
+    <div class="create-form">
+      <h2>{{ editingEvent ? 'Edit Event' : 'Post New Event' }}</h2>
+      <div class="form-group">
+        <label>Event Title *</label>
+        <input type="text" [(ngModel)]="newEvent.title" [class.error]="formErrors['title']" />
+        @if (formErrors['title']) {
+          <span class="error-text">{{ formErrors['title'] }}</span>
+        }
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea [(ngModel)]="newEvent.description" rows="4"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Event Date *</label>
+        <input type="datetime-local" [(ngModel)]="newEvent.eventDate" [class.error]="formErrors['eventDate']" />
+        @if (formErrors['eventDate']) {
+          <span class="error-text">{{ formErrors['eventDate'] }}</span>
+        }
+      </div>
+      <div class="form-group">
+        <label>Location</label>
+        <input type="text" [(ngModel)]="newEvent.location" />
+      </div>
+      <div class="form-group">
+        <label>Image (Optional)</label>
+        <input type="file" accept="image/*" (change)="onImageSelected($event)" />
+        @if (imagePreview) {
+          <div class="image-preview">
+            <img [src]="imagePreview" alt="Preview" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
+            @if (!newEvent.imageUrl) {
+              <button type="button" (click)="uploadImage()" [disabled]="isUploadingImage" class="btn-secondary" style="margin-top: 5px;">
+                {{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}
+              </button>
+            }
+            <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px; margin-left: 5px;">Remove</button>
+          </div>
+        }
+        @if (newEvent.imageUrl && !imagePreview) {
+          <div class="image-preview">
+            <img [src]="newEvent.imageUrl" alt="Current image" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
+            <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px;">Remove</button>
+          </div>
+        }
+      </div>
+      <button (click)="saveEvent()" class="btn-primary">{{ editingEvent ? 'Update Event' : 'Post Event' }}</button>
+      @if (editingEvent) {
+        <button (click)="cancelEdit()" class="btn-secondary">Cancel</button>
+      }
+    </div>
+  }
+
+  @if (isLoading) {
+    <div class="loading">Loading events...</div>
+  } @else if (error) {
+    <div class="error">{{ error }}</div>
+  } @else if (events.length === 0) {
+    <div class="no-events">No upcoming events scheduled.</div>
+  } @else {
+    <div class="events-list">
+      @for (event of events; track event.id) {
+        <div class="event-card">
+          @if (event.imageUrl) {
+            <img [src]="event.imageUrl" alt="{{ event.title }}" style="width: 100%; max-height: 400px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;" />
+          }
+          <h3>{{ event.title }}</h3>
+          <p class="description">{{ event.description }}</p>
+          <p class="details">
+            <strong>Date:</strong> {{ formatDate(event.eventDate) }}<br>
+            @if (event.location) {
+              <strong>Location:</strong> {{ event.location }}
+            }
+          </p>
+          <div class="interactions">
+            <button 
+              (click)="toggleLike('EVENT', event.id, event)" 
+              class="like-btn"
+              [class.liked]="event.isLiked">
+              <span class="heart">{{ event.isLiked ? '❤️' : '🤍' }}</span>
+              <span class="like-count">{{ event.likeCount || 0 }}</span>
+            </button>
+            <button 
+              (click)="toggleComments(event.id)" 
+              class="comment-btn">
+              💬 Comment
+            </button>
+          </div>
+
+          @if (expandedComments.has(event.id)) {
+            <div class="comments-section">
+              <div class="comment-form">
+                <textarea
+                  [(ngModel)]="commentTexts[event.id]"
+                  placeholder="Write a comment..."
+                  rows="2"
+                ></textarea>
+                <button (click)="addComment('EVENT', event.id, event)" class="btn-comment">Post</button>
+              </div>
+              
+              <div class="comments-list">
+                @if (event.comments && event.comments.length > 0) {
+                  @for (comment of event.comments; track comment.id) {
+                    <div class="comment-item">
+                      <div class="comment-header">
+                        <strong>{{ comment.user?.fullName || 'Anonymous' }}</strong>
+                        <span class="comment-date">{{ formatDate(comment.createdAt) }}</span>
+                        @if (isLoggedIn() && (comment.user?.id === getCurrentUserId() || isAdmin)) {
+                          <button (click)="deleteComment(comment.id, 'EVENT', event.id, event)" class="delete-comment">Delete</button>
+                        }
+                      </div>
+                      <p class="comment-content">{{ comment.content }}</p>
+                    </div>
+                  }
+                } @else {
+                  <p class="no-comments">No comments yet. Be the first to comment!</p>
+                }
+              </div>
+            </div>
+          }
+
+          @if (isAdmin) {
+            <div class="event-actions">
+              <button (click)="startEdit(event)" class="btn-edit">Edit</button>
+              <button (click)="deleteEvent(event.id)" class="btn-delete">Delete</button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

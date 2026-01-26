@@ -1,0 +1,54 @@
+.dashboard-container {
+  max-width: 600px;
+  margin: 20px auto;
+  text-align: center;
+}
+
+.id-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  padding: 30px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border-left: 5px solid #4285F4;
+}
+
+.profile-pic {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 3px solid #e0e0e0;
+}
+
+.info {
+  text-align: left;
+}
+
+.status {
+  color: #27ae60;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.actions {
+  margin-top: 30px;
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.action-btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  background-color: #f1f3f4;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.action-btn:hover {
+  background-color: #e8eaed;
+}

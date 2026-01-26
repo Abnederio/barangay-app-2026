@@ -1,0 +1,229 @@
+<div class="services-container">
+  <div class="header">
+    <h1>🏛️ Barangay Services</h1>
+    @if (isAdmin) {
+      <button (click)="showServiceForm = !showServiceForm; editingService = null" class="btn-primary">
+        {{ showServiceForm ? 'Cancel' : '+ Manage Services' }}
+      </button>
+    }
+  </div>
+
+  <div class="search-bar">
+    <input
+      type="text"
+      [(ngModel)]="searchQuery"
+      (input)="onSearchChange()"
+      placeholder="🔍 Search services..."
+      class="search-input"
+    />
+  </div>
+
+  @if (showServiceForm && isAdmin) {
+    <div class="service-management-form">
+      <h2>{{ editingService ? 'Edit Service' : 'Add New Service' }}</h2>
+      <div class="form-group">
+        <label>Service Name *</label>
+        <input type="text" [(ngModel)]="newService.name" [class.error]="formErrors['name']" />
+        @if (formErrors['name']) {
+          <span class="error-text">{{ formErrors['name'] }}</span>
+        }
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea [(ngModel)]="newService.description" rows="4"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Image (Optional)</label>
+        <input type="file" accept="image/*" (change)="onImageSelected($event)" />
+        @if (imagePreview) {
+          <div class="image-preview">
+            <img [src]="imagePreview" alt="Preview" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
+            @if (!newService.imageUrl) {
+              <button type="button" (click)="uploadImage()" [disabled]="isUploadingImage" class="btn-secondary" style="margin-top: 5px;">
+                {{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}
+              </button>
+            }
+            <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px; margin-left: 5px;">Remove</button>
+          </div>
+        }
+        @if (newService.imageUrl && !imagePreview) {
+          <div class="image-preview">
+            <img [src]="newService.imageUrl" alt="Current image" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
+            <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px;">Remove</button>
+          </div>
+        }
+      </div>
+      <button (click)="saveService()" class="btn-primary">{{ editingService ? 'Update Service' : 'Create Service' }}</button>
+      @if (editingService) {
+        <button (click)="cancelServiceEdit()" class="btn-secondary">Cancel</button>
+      }
+    </div>
+  }
+
+  @if (showApplicationForm) {
+    <div class="application-form">
+      <h2>Apply for {{ selectedService }}</h2>
+      @if (successMessage) {
+        <div class="success-message">{{ successMessage }}</div>
+      }
+      @if (formErrors['general']) {
+        <div class="error-message">{{ formErrors['general'] }}</div>
+      }
+      <form (ngSubmit)="submitApplication()">
+        <div class="form-group">
+          <label>Additional Information</label>
+          <textarea
+            [(ngModel)]="additionalInfo"
+            name="additionalInfo"
+            rows="6"
+            placeholder="Please provide any additional information or requirements..."
+          ></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Submit Application</button>
+          <button type="button" (click)="showApplicationForm = false" class="btn-secondary">Cancel</button>
+        </div>
+      </form>
+    </div>
+  }
+
+  @if (isAdmin) {
+    <div class="services-section">
+      <h2>Manage Services</h2>
+      @if (isLoading) {
+        <div class="loading">Loading services...</div>
+      } @else if (error) {
+        <div class="error">{{ error }}</div>
+      } @else if (filteredServices.length === 0) {
+        <div class="no-services">
+          @if (searchQuery) {
+            <p>No services found matching "{{ searchQuery }}"</p>
+          } @else {
+            <p>No services available. Create one to get started.</p>
+          }
+        </div>
+      } @else {
+        <div class="services-list">
+          @for (service of filteredServices; track service.id) {
+            <div class="service-card">
+              @if (service.imageUrl) {
+                <img [src]="service.imageUrl" alt="{{ service.name }}" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;" />
+              }
+              <h3>{{ service.name }}</h3>
+              @if (service.description) {
+                <p class="service-description">{{ service.description }}</p>
+              }
+              @if (service.participants && service.participants.length > 0) {
+                <div class="participants-section">
+                  <h4>Participants ({{ service.participants.length }})</h4>
+                  <ul class="participants-list">
+                    @for (participant of service.participants; track participant.id) {
+                      <li>
+                        {{ participant.fullName }} ({{ participant.email }})
+                        <button (click)="removeParticipant(service.id, participant.id)" class="btn-remove" style="margin-left: 10px; padding: 2px 8px; font-size: 12px;">Remove</button>
+                      </li>
+                    }
+                  </ul>
+                </div>
+              } @else {
+                <div class="participants-section">
+                  <p class="no-participants">No participants yet.</p>
+                </div>
+              }
+              <div class="service-actions">
+                <button (click)="startEditService(service)" class="btn-edit">Edit</button>
+                <button (click)="deleteService(service.id)" class="btn-delete">Delete</button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="services-section">
+      <h2>Available Services</h2>
+      @if (isLoading) {
+        <div class="loading">Loading services...</div>
+      } @else if (error) {
+        <div class="error">{{ error }}</div>
+      } @else if (filteredServices.length === 0) {
+        <div class="no-services">
+          @if (searchQuery) {
+            <p>No services found matching "{{ searchQuery }}"</p>
+          } @else {
+            <p>No services available at this time.</p>
+          }
+        </div>
+      } @else {
+        <div class="services-list">
+          @for (service of filteredServices; track service.id) {
+            <div class="service-card">
+              @if (service.imageUrl) {
+                <img [src]="service.imageUrl" alt="{{ service.name }}" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;" />
+              }
+              <h3>{{ service.name }}</h3>
+              @if (service.description) {
+                <p class="service-description">{{ service.description }}</p>
+              }
+              @if (isParticipant(service)) {
+                <button (click)="leaveService(service.id)" class="btn-secondary">Leave Service</button>
+              } @else {
+                <button (click)="joinService(service.id)" class="btn-secondary">Join Service</button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  @if (isAdmin) {
+    <div class="applications-section">
+      <h2>All Service Applications (Admin)</h2>
+      @if (allApplications.length === 0) {
+        <div class="no-applications">No applications submitted yet.</div>
+      } @else {
+        <div class="applications-list">
+          @for (app of allApplications; track app.id) {
+            <div class="application-card">
+              <div class="application-header">
+                <h3>{{ app.serviceType }}</h3>
+                <span [class]="'status-badge ' + getStatusClass(app.status)">{{ app.status }}</span>
+              </div>
+              @if (app.user) {
+                <p class="applicant-info"><strong>Applicant:</strong> {{ app.user.fullName }} ({{ app.user.email }})</p>
+              }
+              @if (app.additionalInfo) {
+                <p class="additional-info">{{ app.additionalInfo }}</p>
+              }
+              <p class="submitted-date">Submitted: {{ formatDate(app.submittedAt) }}</p>
+              <div class="admin-actions">
+                <button (click)="updateApplicationStatus(app.id, 'APPROVED')" class="btn-approve" [disabled]="app.status === 'APPROVED'">Approve</button>
+                <button (click)="updateApplicationStatus(app.id, 'REJECTED')" class="btn-reject" [disabled]="app.status === 'REJECTED'">Reject</button>
+                <button (click)="updateApplicationStatus(app.id, 'PENDING')" class="btn-pending" [disabled]="app.status === 'PENDING'">Reset to Pending</button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  } @else if (myApplications.length > 0) {
+    <div class="applications-section">
+      <h2>My Applications</h2>
+      <div class="applications-list">
+        @for (app of myApplications; track app.id) {
+          <div class="application-card">
+            <div class="application-header">
+              <h3>{{ app.serviceType }}</h3>
+              <span [class]="'status-badge ' + getStatusClass(app.status)">{{ app.status }}</span>
+            </div>
+            @if (app.additionalInfo) {
+              <p class="additional-info">{{ app.additionalInfo }}</p>
+            }
+            <p class="submitted-date">Submitted: {{ formatDate(app.submittedAt) }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>
