@@ -15,7 +15,7 @@ export interface AuthResponse {
   providedIn: 'root',
 })
 export class MyHttpClient {
-  private baseUrl: string = "http://localhost:8080";
+  private baseUrl: string = "https://barangay-app-2026.onrender.com";
   private token: string | null = null;
   private currentUser: AuthResponse | null = null;
   private authChangedSubject = new BehaviorSubject<void>(undefined);
