@@ -32,7 +32,7 @@ export class Feedback implements OnInit, OnDestroy {
   error: string = '';
   isAdmin: boolean = false;
 
-  // User Form Variables
+  // Form Variables
   message: string = '';
   formErrors: { [key: string]: string } = {};
   successMessage: string = '';
@@ -87,7 +87,6 @@ export class Feedback implements OnInit, OnDestroy {
     this.isAdmin = this.http.isAdmin();
 
     if (this.http.isLoggedIn()) {
-      // If user is logged in, try to load feedback (backend will block if not admin)
       this.loadFeedback();
     } else {
       this.feedback = [];
@@ -97,13 +96,11 @@ export class Feedback implements OnInit, OnDestroy {
       return;
     }
 
-    // Refresh admin status
     this.http.refreshUserProfile().subscribe({
       next: (profile: any) => {
         this.http.updateUserProfile(profile);
         const wasAdmin = this.isAdmin;
         this.isAdmin = profile.isAdmin;
-
         if (this.isAdmin && (!wasAdmin || this.feedback.length === 0)) {
           this.loadFeedback();
         }
@@ -127,9 +124,9 @@ export class Feedback implements OnInit, OnDestroy {
       return;
     }
 
-    // Only show loading indicator if we are actually expecting data (usually admins)
+    // Only show loading if user is likely an admin to avoid flashing for users
     if (this.isAdmin) {
-        this.isLoading = true;
+       this.isLoading = true;
     }
 
     this.error = '';
@@ -141,7 +138,7 @@ export class Feedback implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       },
       error: (err: any) => {
-        // If 403/401, it just means they are a regular user, so no feedback to show
+        // Ignore 401/403 (Regular users)
         if (err.status !== 401 && err.status !== 403) {
           this.error = 'Failed to load feedback';
         }
@@ -178,13 +175,11 @@ export class Feedback implements OnInit, OnDestroy {
         this.formErrors = {};
         this.isSubmitting = false;
 
-        // Auto-hide success message after 5 seconds
         setTimeout(() => {
           this.showSuccessAlert = false;
           this.successMessage = '';
         }, 5000);
 
-        // If an admin submits feedback, reload the list so they see it
         if (this.isAdmin) {
           this.loadFeedback();
         }
@@ -195,7 +190,7 @@ export class Feedback implements OnInit, OnDestroy {
 
         // --- STRICT PROFANITY BLOCK ---
         if (err.status === 409 && err.error?.error === 'PROFANITY_WARNING') {
-           alert(err.error.message); // Show alert, do not clear form
+           alert(err.error.message); // Show alert, keep text in box
         } else if (err.status === 401 || err.status === 403) {
           if (confirm('Session expired. You need to login to submit feedback. Go to login?')) {
             window.location.href = '/login';
@@ -207,8 +202,6 @@ export class Feedback implements OnInit, OnDestroy {
       }
     });
   }
-
-  // --- Admin Logic ---
 
   startReply(feedbackId: number): void {
     this.replyingTo = feedbackId;
@@ -248,7 +241,7 @@ export class Feedback implements OnInit, OnDestroy {
 
     this.http.delete(`/api/admin/feedback/${feedbackId}`).subscribe({
       next: () => {
-        this.loadFeedback(); // Reload list first
+        this.loadFeedback();
         setTimeout(() => alert('Feedback deleted successfully!'), 100);
       },
       error: (err: any) => {
