@@ -323,7 +323,6 @@ export class Announcements implements OnInit, OnDestroy {
        entityType: entityType,
        entityId: entityId.toString(),
        content: commentText,
-       confirmed: confirmed
      }).subscribe({
        next: () => {
          this.commentTexts[entityId] = '';
