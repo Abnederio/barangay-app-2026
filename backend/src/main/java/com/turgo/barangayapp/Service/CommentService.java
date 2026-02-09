@@ -53,8 +53,8 @@ public class CommentService {
         boolean hasProfanity = containsProfanity(request.getContent());
 
         // 2. Logic: If bad words exist AND user hasn't said "Yes, I'm sure" (confirmed)
-        if (hasProfanity && !request.isConfirmed()) {
-            throw new ProfanityWarningException("This comment contains inappropriate language. Are you sure you want to post it?");
+        if (hasProfanity) {
+            throw new ProfanityWarningException("Please remove the profane words from your comment.");
         }
 
         // 3. Save the comment
