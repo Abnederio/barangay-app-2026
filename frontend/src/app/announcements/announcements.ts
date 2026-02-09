@@ -302,28 +302,35 @@ export class Announcements implements OnInit, OnDestroy {
     }
   }
 
-  addComment(entityType: string, entityId: number, item: any): void {
+  addComment(entityType: string, entityId: number, item: any, confirmed: boolean = false): void {
     if (!this.http.isLoggedIn()) {
       if (confirm('You need to login to comment. Would you like to go to the login page?')) {
         window.location.href = '/login';
       }
       return;
     }
+
     const commentText = this.commentTexts[entityId]?.trim();
     if (!commentText || commentText.length < 1) {
       return;
     }
+
     this.http.post('/api/comments', {
       entityType: entityType,
       entityId: entityId.toString(),
-      content: commentText
+      content: commentText,
+      confirmed: confirmed
     }).subscribe({
       next: () => {
         this.commentTexts[entityId] = '';
         this.loadComments(entityType, entityId, item);
       },
       error: (err: any) => {
-        if (err.status === 401 || err.status === 403) {
+        if (err.status === 409 && err.error?.error === 'PROFANITY_WARNING') {
+          if (confirm(err.error.message)) {
+            this.addComment(entityType, entityId, item, true);
+          }
+        } else if (err.status === 401 || err.status === 403) {
           if (confirm('You need to login to comment. Would you like to go to the login page?')) {
             window.location.href = '/login';
           }
