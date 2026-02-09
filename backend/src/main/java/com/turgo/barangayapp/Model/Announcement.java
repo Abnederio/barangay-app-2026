@@ -18,6 +18,9 @@ public class Announcement {
     
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "event_date")
+    private LocalDateTime eventDate;
     
     private String imageUrl;
     
@@ -26,6 +29,14 @@ public class Announcement {
     private User createdBy;
 
     public Announcement() {
+    }
+
+    public LocalDateTime getEventDate() {
+        return eventDate;
+    }
+
+    public void setEventDate(LocalDateTime eventDate) {
+        this.eventDate = eventDate;
     }
 
     public Long getId() {

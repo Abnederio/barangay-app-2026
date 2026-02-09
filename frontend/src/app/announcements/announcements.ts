@@ -9,6 +9,7 @@ interface Announcement {
   title: string;
   content: string;
   createdAt: string;
+  eventDate?: string; // <--- NEW FIELD
   imageUrl?: string;
   likeCount?: number;
   isLiked?: boolean;
@@ -43,11 +44,12 @@ export class Announcements implements OnInit, OnDestroy {
   private authSub?: Subscription;
 
   showCreateForm: boolean = false;
-  editingAnnouncement: Announcement | null = null; // Track the announcement being edited
+  editingAnnouncement: Announcement | null = null;
 
   newAnnouncement = {
     title: '',
     content: '',
+    eventDate: '', // <--- NEW FIELD
     imageUrl: ''
   };
 
@@ -106,17 +108,21 @@ export class Announcements implements OnInit, OnDestroy {
       next: (data: unknown) => {
         try {
           const list = Array.isArray(data) ? (data as Announcement[]) : [];
+          // The backend now filters by date, but we can still sort or map here if needed
           const uniqueMap = new Map<number, Announcement>();
           list.forEach(item => {
             if (!uniqueMap.has(item.id)) {
               uniqueMap.set(item.id, item);
             }
           });
+
+          // Sort by eventDate ascending (nearest future event first)
           this.announcements = Array.from(uniqueMap.values()).sort((a, b) => {
-            const dateA = new Date(a.createdAt).getTime();
-            const dateB = new Date(b.createdAt).getTime();
-            return dateB - dateA;
+            const dateA = a.eventDate ? new Date(a.eventDate).getTime() : new Date(a.createdAt).getTime();
+            const dateB = b.eventDate ? new Date(b.eventDate).getTime() : new Date(b.createdAt).getTime();
+            return dateA - dateB;
           });
+
           this.filteredAnnouncements = [...this.announcements];
           this.announcements.forEach((announcement) => {
             announcement.likeCount = 0;
@@ -144,20 +150,33 @@ export class Announcements implements OnInit, OnDestroy {
     this.newAnnouncement = {
       title: announcement.title,
       content: announcement.content,
+      // Format the date so the input box understands it
+      eventDate: announcement.eventDate ? this.formatDateForInput(announcement.eventDate) : '',
       imageUrl: announcement.imageUrl || ''
     };
     this.imagePreview = announcement.imageUrl || null;
     this.showCreateForm = true;
-    window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   cancelEdit(): void {
     this.editingAnnouncement = null;
     this.showCreateForm = false;
-    this.newAnnouncement = { title: '', content: '', imageUrl: '' };
+    this.newAnnouncement = { title: '', content: '', eventDate: '', imageUrl: '' }; // Reset eventDate
     this.selectedImageFile = null;
     this.imagePreview = null;
     this.formErrors = {};
+  }
+
+  // Helper to format date for <input type="datetime-local">
+  formatDateForInput(dateString: string): string {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   }
 
   deleteAnnouncement(id: number): void {
@@ -178,11 +197,15 @@ export class Announcements implements OnInit, OnDestroy {
       this.formErrors['title'] = 'Title must be at least 3 characters';
     }
 
+    // Optional: Validate date
+    if (!this.newAnnouncement.eventDate) {
+      this.formErrors['eventDate'] = 'Event/Expiry Date is required';
+    }
+
     if (Object.keys(this.formErrors).length > 0) {
       return;
     }
 
-    // Handle image upload if a new file was selected but not yet uploaded
     if (this.selectedImageFile && !this.newAnnouncement.imageUrl) {
       this.uploadImage();
       const checkUpload = setInterval(() => {
@@ -203,7 +226,6 @@ export class Announcements implements OnInit, OnDestroy {
     if (this.isUploadingImage) return;
 
     if (this.editingAnnouncement) {
-      // Update existing announcement
       this.http.put(`/api/admin/announcements/${this.editingAnnouncement.id}`, this.newAnnouncement).subscribe({
         next: () => {
           this.finishForm();
@@ -212,7 +234,6 @@ export class Announcements implements OnInit, OnDestroy {
         error: (err) => alert(err.message || 'Failed to update announcement')
       });
     } else {
-      // Create new announcement
       this.http.post('/api/admin/announcements', this.newAnnouncement).subscribe({
         next: () => {
           this.finishForm();
@@ -226,7 +247,7 @@ export class Announcements implements OnInit, OnDestroy {
   private finishForm(): void {
     this.showCreateForm = false;
     this.editingAnnouncement = null;
-    this.newAnnouncement = { title: '', content: '', imageUrl: '' };
+    this.newAnnouncement = { title: '', content: '', eventDate: '', imageUrl: '' };
     this.selectedImageFile = null;
     this.imagePreview = null;
     this.formErrors = {};
@@ -302,51 +323,41 @@ export class Announcements implements OnInit, OnDestroy {
     }
   }
 
-  // ... (keep existing code)
+  addComment(entityType: string, entityId: number, item: any): void {
+    if (!this.http.isLoggedIn()) {
+      if (confirm('You need to login to comment. Would you like to go to the login page?')) {
+        window.location.href = '/login';
+      }
+      return;
+    }
 
- // ... (keep existing code)
+    const commentText = this.commentTexts[entityId]?.trim();
+    if (!commentText || commentText.length < 1) {
+      return;
+    }
 
-   addComment(entityType: string, entityId: number, item: any, confirmed: boolean = false): void {
-     if (!this.http.isLoggedIn()) {
-       if (confirm('You need to login to comment. Would you like to go to the login page?')) {
-         window.location.href = '/login';
-       }
-       return;
-     }
-
-     const commentText = this.commentTexts[entityId]?.trim();
-     if (!commentText || commentText.length < 1) {
-       return;
-     }
-
-     this.http.post('/api/comments', {
-       entityType: entityType,
-       entityId: entityId.toString(),
-       content: commentText,
-     }).subscribe({
-       next: () => {
-         this.commentTexts[entityId] = '';
-         this.loadComments(entityType, entityId, item);
-       },
-       error: (err: any) => {
-         // --- CHANGED LOGIC: HARD BLOCK ---
-         if (err.status === 409 && err.error?.error === 'PROFANITY_WARNING') {
-           // Just alert the user. Do NOT ask to confirm. Do NOT retry.
-           alert(err.error.message);
-         }
-         // --- END CHANGED LOGIC ---
-         else if (err.status === 401 || err.status === 403) {
-           if (confirm('You need to login to comment. Would you like to go to the login page?')) {
-             window.location.href = '/login';
-           }
-         } else {
-           alert(err.message || 'Failed to add comment');
-         }
-       }
-     });
-   }
-
- // ... (keep existing code)
+    this.http.post('/api/comments', {
+      entityType: entityType,
+      entityId: entityId.toString(),
+      content: commentText
+    }).subscribe({
+      next: () => {
+        this.commentTexts[entityId] = '';
+        this.loadComments(entityType, entityId, item);
+      },
+      error: (err: any) => {
+        if (err.status === 409 && err.error?.error === 'PROFANITY_WARNING') {
+          alert(err.error.message); // Strict profanity block
+        } else if (err.status === 401 || err.status === 403) {
+          if (confirm('You need to login to comment. Would you like to go to the login page?')) {
+            window.location.href = '/login';
+          }
+        } else {
+          alert(err.message || 'Failed to add comment');
+        }
+      }
+    });
+  }
 
   deleteComment(commentId: number, entityType: string, entityId: number, item: any): void {
     if (confirm('Are you sure you want to delete this comment?')) {

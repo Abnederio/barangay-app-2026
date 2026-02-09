@@ -2,9 +2,9 @@
   <div class="header">
     <h1>📢 Barangay Announcements</h1>
     @if (isAdmin) {
-      <button (click)="showCreateForm ? cancelEdit() : showCreateForm = !showCreateForm" class="btn-primary">
-        {{ showCreateForm ? 'Cancel' : '+ Create Announcement' }}
-      </button>
+    <button (click)="showCreateForm ? cancelEdit() : showCreateForm = !showCreateForm" class="btn-primary">
+      {{ showCreateForm ? 'Cancel' : '+ Create Announcement' }}
+    </button>
     }
   </div>
 
@@ -19,130 +19,147 @@
   </div>
 
   @if (showCreateForm && isAdmin) {
-    <div class="create-form">
-      <h2>{{ editingAnnouncement ? 'Edit Announcement' : 'Create New Announcement' }}</h2>
-      <div class="form-group">
-        <label>Title *</label>
-        <input type="text" [(ngModel)]="newAnnouncement.title" [class.error]="formErrors['title']" />
-        @if (formErrors['title']) {
-          <span class="error-text">{{ formErrors['title'] }}</span>
-        }
-      </div>
-      <div class="form-group">
-        <label>Content *</label>
-        <textarea [(ngModel)]="newAnnouncement.content" rows="6" [class.error]="formErrors['content']"></textarea>
-        @if (formErrors['content']) {
-          <span class="error-text">{{ formErrors['content'] }}</span>
-        }
-      </div>
-      <div class="form-group">
-        <label>Image (Optional)</label>
-        <input type="file" accept="image/*" (change)="onImageSelected($event)" />
-        @if (imagePreview) {
-          <div class="image-preview">
-            <img [src]="imagePreview" alt="Preview" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
-            @if (!newAnnouncement.imageUrl) {
-              <button type="button" (click)="uploadImage()" [disabled]="isUploadingImage" class="btn-secondary" style="margin-top: 5px;">
-                {{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}
-              </button>
-            }
-            <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px; margin-left: 5px;">Remove</button>
-          </div>
-        }
-        @if (newAnnouncement.imageUrl && !imagePreview) {
-          <div class="image-preview">
-            <img [src]="newAnnouncement.imageUrl" alt="Current image" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
-            <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px;">Remove</button>
-          </div>
-        }
-      </div>
-      <button (click)="saveAnnouncement()" class="btn-primary">
-        {{ editingAnnouncement ? 'Update Announcement' : 'Create Announcement' }}
-      </button>
-      @if (editingAnnouncement) {
-        <button (click)="cancelEdit()" class="btn-secondary" style="margin-left: 10px;">Cancel</button>
+  <div class="create-form">
+    <h2>{{ editingAnnouncement ? 'Edit Announcement' : 'Create New Announcement' }}</h2>
+    <div class="form-group">
+      <label>Title *</label>
+      <input type="text" [(ngModel)]="newAnnouncement.title" [class.error]="formErrors['title']" />
+      @if (formErrors['title']) {
+      <span class="error-text">{{ formErrors['title'] }}</span>
       }
     </div>
+
+    <div class="form-group">
+      <label>Event / Expiry Date *</label>
+      <input type="datetime-local" [(ngModel)]="newAnnouncement.eventDate" [class.error]="formErrors['eventDate']" />
+      <small style="color: #666; font-size: 0.85em;">Announcements will be hidden after this date.</small>
+      @if (formErrors['eventDate']) {
+      <span class="error-text">{{ formErrors['eventDate'] }}</span>
+      }
+    </div>
+    <div class="form-group">
+      <label>Content *</label>
+      <textarea [(ngModel)]="newAnnouncement.content" rows="6" [class.error]="formErrors['content']"></textarea>
+      @if (formErrors['content']) {
+      <span class="error-text">{{ formErrors['content'] }}</span>
+      }
+    </div>
+    <div class="form-group">
+      <label>Image (Optional)</label>
+      <input type="file" accept="image/*" (change)="onImageSelected($event)" />
+      @if (imagePreview) {
+      <div class="image-preview">
+        <img [src]="imagePreview" alt="Preview" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
+        @if (!newAnnouncement.imageUrl) {
+        <button type="button" (click)="uploadImage()" [disabled]="isUploadingImage" class="btn-secondary" style="margin-top: 5px;">
+          {{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}
+        </button>
+        }
+        <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px; margin-left: 5px;">Remove</button>
+      </div>
+      }
+      @if (newAnnouncement.imageUrl && !imagePreview) {
+      <div class="image-preview">
+        <img [src]="newAnnouncement.imageUrl" alt="Current image" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
+        <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px;">Remove</button>
+      </div>
+      }
+    </div>
+    <button (click)="saveAnnouncement()" class="btn-primary">
+      {{ editingAnnouncement ? 'Update Announcement' : 'Create Announcement' }}
+    </button>
+    @if (editingAnnouncement) {
+    <button (click)="cancelEdit()" class="btn-secondary" style="margin-left: 10px;">Cancel</button>
+    }
+  </div>
   }
 
   @if (isLoading) {
-    <div class="loading">Loading announcements...</div>
+  <div class="loading">Loading announcements...</div>
   } @else if (error) {
-    <div class="error">{{ error }}</div>
+  <div class="error">{{ error }}</div>
   } @else if (filteredAnnouncements.length === 0) {
-    <div class="no-announcements">
-      @if (searchQuery) {
-        <p>No announcements found matching "{{ searchQuery }}"</p>
-      } @else {
-        <p>No announcements available at this time.</p>
-      }
-    </div>
+  <div class="no-announcements">
+    @if (searchQuery) {
+    <p>No announcements found matching "{{ searchQuery }}"</p>
+    } @else {
+    <p>No upcoming announcements available.</p>
+    }
+  </div>
   } @else {
-    <div class="announcements-list">
-      @for (announcement of filteredAnnouncements; track announcement.id) {
-        <div class="announcement-card">
-          @if (announcement.imageUrl) {
-            <img [src]="announcement.imageUrl" alt="{{ announcement.title }}" class="announcement-image" />
-          }
-          <h3>{{ announcement.title }}</h3>
-          <p class="date">📅 {{ formatDate(announcement.createdAt) }}</p>
-          <p class="content">{{ announcement.content }}</p>
+  <div class="announcements-list">
+    @for (announcement of filteredAnnouncements; track announcement.id) {
+    <div class="announcement-card">
+      @if (announcement.imageUrl) {
+      <img [src]="announcement.imageUrl" alt="{{ announcement.title }}" class="announcement-image" />
+      }
+      <h3>{{ announcement.title }}</h3>
 
-          <div class="interactions">
-            <button
-              (click)="toggleLike('ANNOUNCEMENT', announcement.id, announcement)"
-              class="like-btn"
-              [class.liked]="announcement.isLiked">
-              <span class="heart">{{ announcement.isLiked ? '❤️' : '🤍' }}</span>
-              <span class="like-count">{{ announcement.likeCount || 0 }}</span>
-            </button>
-            <button
-              (click)="toggleComments(announcement.id)"
-              class="comment-btn">
-              💬 Comment
-            </button>
-          </div>
+      <p class="date">
+        @if (announcement.eventDate) {
+        📅 Happening/Expires: {{ formatDate(announcement.eventDate) }}
+        } @else {
+        🕒 Posted: {{ formatDate(announcement.createdAt) }}
+        }
+      </p>
 
-          @if (expandedComments.has(announcement.id)) {
-            <div class="comments-section">
-              <div class="comment-form">
+      <p class="content">{{ announcement.content }}</p>
+
+      <div class="interactions">
+        <button
+          (click)="toggleLike('ANNOUNCEMENT', announcement.id, announcement)"
+          class="like-btn"
+          [class.liked]="announcement.isLiked">
+          <span class="heart">{{ announcement.isLiked ? '❤️' : '🤍' }}</span>
+          <span class="like-count">{{ announcement.likeCount || 0 }}</span>
+        </button>
+        <button
+          (click)="toggleComments(announcement.id)"
+          class="comment-btn">
+          💬 Comment
+        </button>
+      </div>
+
+      @if (expandedComments.has(announcement.id)) {
+      <div class="comments-section">
+        <div class="comment-form">
                 <textarea
                   [(ngModel)]="commentTexts[announcement.id]"
                   placeholder="Write a comment..."
                   rows="2"
                 ></textarea>
-                <button (click)="addComment('ANNOUNCEMENT', announcement.id, announcement)" class="btn-comment">Post</button>
-              </div>
+          <button (click)="addComment('ANNOUNCEMENT', announcement.id, announcement)" class="btn-comment">Post</button>
+        </div>
 
-              <div class="comments-list">
-                @if (announcement.comments && announcement.comments.length > 0) {
-                  @for (comment of announcement.comments; track comment.id) {
-                    <div class="comment-item">
-                      <div class="comment-header">
-                        <strong>{{ comment.user?.fullName || 'Anonymous' }}</strong>
-                        <span class="comment-date">{{ formatDate(comment.createdAt) }}</span>
-                        @if (isLoggedIn() && (comment.user?.id === getCurrentUserId() || isAdmin)) {
-                          <button (click)="deleteComment(comment.id, 'ANNOUNCEMENT', announcement.id, announcement)" class="delete-comment">Delete</button>
-                        }
-                      </div>
-                      <p class="comment-content">{{ comment.content }}</p>
-                    </div>
-                  }
-                } @else {
-                  <p class="no-comments">No comments yet. Be the first to comment!</p>
-                }
-              </div>
+        <div class="comments-list">
+          @if (announcement.comments && announcement.comments.length > 0) {
+          @for (comment of announcement.comments; track comment.id) {
+          <div class="comment-item">
+            <div class="comment-header">
+              <strong>{{ comment.user?.fullName || 'Anonymous' }}</strong>
+              <span class="comment-date">{{ formatDate(comment.createdAt) }}</span>
+              @if (isLoggedIn() && (comment.user?.id === getCurrentUserId() || isAdmin)) {
+              <button (click)="deleteComment(comment.id, 'ANNOUNCEMENT', announcement.id, announcement)" class="delete-comment">Delete</button>
+              }
             </div>
+            <p class="comment-content">{{ comment.content }}</p>
+          </div>
           }
-
-          @if (isAdmin) {
-            <div class="announcement-actions" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; display: flex; gap: 10px;">
-              <button (click)="startEdit(announcement)" class="btn-edit" style="background-color: #fbbc04; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Edit</button>
-              <button (click)="deleteAnnouncement(announcement.id)" class="btn-delete" style="background-color: #d93025; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Delete</button>
-            </div>
+          } @else {
+          <p class="no-comments">No comments yet. Be the first to comment!</p>
           }
         </div>
+      </div>
+      }
+
+      @if (isAdmin) {
+      <div class="announcement-actions" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; display: flex; gap: 10px;">
+        <button (click)="startEdit(announcement)" class="btn-edit" style="background-color: #fbbc04; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Edit</button>
+        <button (click)="deleteAnnouncement(announcement.id)" class="btn-delete" style="background-color: #d93025; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Delete</button>
+      </div>
       }
     </div>
+    }
+  </div>
   }
 </div>
