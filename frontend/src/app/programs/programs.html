@@ -1,10 +1,10 @@
 <div class="programs-container">
   <div class="header">
-    <h1>🎯 Barangay Programs</h1>
+    <h1>🏛️ Barangay Programs</h1>
     @if (isAdmin) {
-      <button (click)="showCreateForm = !showCreateForm" class="btn-primary">
-        {{ showCreateForm ? 'Cancel' : '+ Create Program' }}
-      </button>
+    <button (click)="showCreateForm ? cancelEdit() : showCreateForm = !showCreateForm" class="btn-primary">
+      {{ showCreateForm ? 'Cancel' : '+ Create Program' }}
+    </button>
     }
   </div>
 
@@ -19,165 +19,176 @@
   </div>
 
   @if (showCreateForm && isAdmin) {
-    <div class="create-form">
-      <h2>{{ editingProgram ? 'Edit Program' : 'Create New Program' }}</h2>
-      <div class="form-group">
-        <label>Program Name *</label>
-        <input type="text" [(ngModel)]="newProgram.name" [class.error]="formErrors['name']" />
-        @if (formErrors['name']) {
-          <span class="error-text">{{ formErrors['name'] }}</span>
-        }
-      </div>
-      <div class="form-group">
-        <label>Description</label>
-        <textarea [(ngModel)]="newProgram.description" rows="4"></textarea>
-      </div>
-      <div class="form-group">
-        <label>Start Date *</label>
-        <input type="datetime-local" [(ngModel)]="newProgram.startDate" [class.error]="formErrors['startDate']" />
-        @if (formErrors['startDate']) {
-          <span class="error-text">{{ formErrors['startDate'] }}</span>
-        }
-      </div>
-      <div class="form-group">
-        <label>End Date *</label>
-        <input type="datetime-local" [(ngModel)]="newProgram.endDate" [class.error]="formErrors['endDate']" />
-        @if (formErrors['endDate']) {
-          <span class="error-text">{{ formErrors['endDate'] }}</span>
-        }
-      </div>
-      <div class="form-group">
-        <label>Image (Optional)</label>
-        <input type="file" accept="image/*" (change)="onImageSelected($event)" />
-        @if (imagePreview) {
-          <div class="image-preview">
-            <img [src]="imagePreview" alt="Preview" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
-            @if (!newProgram.imageUrl) {
-              <button type="button" (click)="uploadImage()" [disabled]="isUploadingImage" class="btn-secondary" style="margin-top: 5px;">
-                {{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}
-              </button>
-            }
-            <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px; margin-left: 5px;">Remove</button>
-          </div>
-        }
-        @if (newProgram.imageUrl && !imagePreview) {
-          <div class="image-preview">
-            <img [src]="newProgram.imageUrl" alt="Current image" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
-            <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px;">Remove</button>
-          </div>
-        }
-      </div>
-      <button (click)="saveProgram()" class="btn-primary">{{ editingProgram ? 'Update Program' : 'Create Program' }}</button>
-      @if (editingProgram) {
-        <button (click)="cancelEdit()" class="btn-secondary">Cancel</button>
+  <div class="create-form">
+    <h2>{{ editingProgram ? 'Edit Program' : 'Create New Program' }}</h2>
+    <div class="form-group">
+      <label>Name *</label>
+      <input type="text" [(ngModel)]="newProgram.name" [class.error]="formErrors['name']" />
+      @if (formErrors['name']) {
+      <span class="error-text">{{ formErrors['name'] }}</span>
       }
     </div>
+    <div class="form-group">
+      <label>Start Date *</label>
+      <input type="datetime-local" [(ngModel)]="newProgram.startDate" [class.error]="formErrors['startDate']" />
+      @if (formErrors['startDate']) {
+      <span class="error-text">{{ formErrors['startDate'] }}</span>
+      }
+    </div>
+    <div class="form-group">
+      <label>End Date *</label>
+      <input type="datetime-local" [(ngModel)]="newProgram.endDate" [class.error]="formErrors['endDate']" />
+      @if (formErrors['endDate']) {
+      <span class="error-text">{{ formErrors['endDate'] }}</span>
+      }
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea [(ngModel)]="newProgram.description" rows="4"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Image (Optional)</label>
+      <input type="file" accept="image/*" (change)="onImageSelected($event)" />
+      @if (imagePreview) {
+      <div class="image-preview">
+        <img [src]="imagePreview" alt="Preview" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
+        @if (!newProgram.imageUrl) {
+        <button type="button" (click)="uploadImage()" [disabled]="isUploadingImage" class="btn-secondary" style="margin-top: 5px;">
+          {{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}
+        </button>
+        }
+        <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px; margin-left: 5px;">Remove</button>
+      </div>
+      }
+      @if (newProgram.imageUrl && !imagePreview) {
+      <div class="image-preview">
+        <img [src]="newProgram.imageUrl" alt="Current image" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
+        <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px;">Remove</button>
+      </div>
+      }
+    </div>
+    <button (click)="saveProgram()" class="btn-primary">
+      {{ editingProgram ? 'Update Program' : 'Create Program' }}
+    </button>
+    @if (editingProgram) {
+    <button (click)="cancelEdit()" class="btn-secondary" style="margin-left: 10px;">Cancel</button>
+    }
+  </div>
   }
 
   @if (isLoading) {
-    <div class="loading">Loading programs...</div>
+  <div class="loading">Loading programs...</div>
   } @else if (error) {
-    <div class="error">{{ error }}</div>
+  <div class="error">{{ error }}</div>
   } @else if (filteredPrograms.length === 0) {
-    <div class="no-programs">
-      @if (searchQuery) {
-        <p>No programs found matching "{{ searchQuery }}"</p>
-      } @else {
-        <p>No active programs available.</p>
-      }
-    </div>
+  <div class="no-programs">
+    @if (searchQuery) {
+    <p>No programs found matching "{{ searchQuery }}"</p>
+    } @else {
+    <p>No upcoming programs available.</p>
+    }
+  </div>
   } @else {
-    <div class="programs-list">
-      @for (program of filteredPrograms; track program.id) {
-        <div class="program-card">
-          @if (program.imageUrl) {
-            <img [src]="program.imageUrl" [alt]="program.name" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;" />
-          }
-          <h3>{{ program.name }}</h3>
-          <p class="description">{{ program.description }}</p>
-          <p class="dates">
-            <strong>Start:</strong> {{ formatDate(program.startDate) }}<br>
-            <strong>End:</strong> {{ formatDate(program.endDate) }}
-          </p>
-          @if (isAdmin) {
-            <div class="participants-section">
-              <h4>Participants ({{ program.participants?.length || 0 }})</h4>
-              @if (program.participants && program.participants.length > 0) {
-                <ul class="participants-list">
-                  @for (participant of program.participants; track participant.id) {
-                    <li>
-                      {{ participant.fullName }} ({{ participant.email }})
-                      <button (click)="removeParticipant(program.id, participant.id)" class="btn-remove" style="margin-left: 10px; padding: 2px 8px; font-size: 12px;">Remove</button>
-                    </li>
-                  }
-                </ul>
-              } @else {
-                <p class="no-participants">No participants yet.</p>
-              }
-            </div>
-          }
-          <div class="interactions">
-            <button 
-              (click)="toggleLike('PROGRAM', program.id, program)" 
-              class="like-btn"
-              [class.liked]="program.isLiked">
-              <span class="heart">{{ program.isLiked ? '❤️' : '🤍' }}</span>
-              <span class="like-count">{{ program.likeCount || 0 }}</span>
-            </button>
-            <button 
-              (click)="toggleComments(program.id)" 
-              class="comment-btn">
-              💬 Comment
-            </button>
-          </div>
+  <div class="programs-list">
+    @for (program of filteredPrograms; track program.id) {
+    <div class="program-card">
+      @if (program.imageUrl) {
+      <img [src]="program.imageUrl" alt="{{ program.name }}" class="program-image" />
+      }
+      <div class="card-header">
+        <h3>{{ program.name }}</h3>
+        @if (isHappeningNow(program)) {
+        <span class="badge active" style="background-color: #2ecc71; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.8em; margin-left: 10px;">🟢 Happening Now</span>
+        } @else {
+        <span class="badge upcoming" style="background-color: #3498db; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.8em; margin-left: 10px;">📅 Upcoming</span>
+        }
+      </div>
 
-          @if (expandedComments.has(program.id)) {
-            <div class="comments-section">
-              <div class="comment-form">
+      <div class="program-dates" style="margin: 10px 0; font-size: 0.9em; color: #555;">
+        <p><strong>Starts:</strong> {{ formatDate(program.startDate) }}</p>
+        <p><strong>Ends:</strong> {{ formatDate(program.endDate) }}</p>
+      </div>
+
+      <p class="description">{{ program.description }}</p>
+
+      <div class="program-actions">
+        @if (isParticipant(program)) {
+        <button (click)="leaveProgram(program.id)" class="btn-leave">Leave Program</button>
+        <span class="joined-badge">✅ Joined</span>
+        } @else {
+        <button (click)="joinProgram(program.id)" class="btn-join">Join Program</button>
+        }
+      </div>
+
+      @if (isAdmin && program.participants && program.participants.length > 0) {
+      <div class="participants-list">
+        <h4>Participants ({{ program.participants.length }})</h4>
+        <ul>
+          @for (participant of program.participants; track participant.id) {
+          <li>
+            {{ participant.fullName }} ({{ participant.email }})
+            <button (click)="removeParticipant(program.id, participant.id)" class="btn-remove-participant">Remove</button>
+          </li>
+          }
+        </ul>
+      </div>
+      }
+
+      <div class="interactions">
+        <button
+          (click)="toggleLike('PROGRAM', program.id, program)"
+          class="like-btn"
+          [class.liked]="program.isLiked">
+          <span class="heart">{{ program.isLiked ? '❤️' : '🤍' }}</span>
+          <span class="like-count">{{ program.likeCount || 0 }}</span>
+        </button>
+        <button
+          (click)="toggleComments(program.id)"
+          class="comment-btn">
+          💬 Comment
+        </button>
+      </div>
+
+      @if (expandedComments.has(program.id)) {
+      <div class="comments-section">
+        <div class="comment-form">
                 <textarea
                   [(ngModel)]="commentTexts[program.id]"
                   placeholder="Write a comment..."
                   rows="2"
                 ></textarea>
-                <button (click)="addComment('PROGRAM', program.id, program)" class="btn-comment">Post</button>
-              </div>
-              
-              <div class="comments-list">
-                @if (program.comments && program.comments.length > 0) {
-                  @for (comment of program.comments; track comment.id) {
-                    <div class="comment-item">
-                      <div class="comment-header">
-                        <strong>{{ comment.user?.fullName || 'Anonymous' }}</strong>
-                        <span class="comment-date">{{ formatDate(comment.createdAt) }}</span>
-                        @if (isLoggedIn() && (comment.user?.id === getCurrentUserId() || isAdmin)) {
-                          <button (click)="deleteComment(comment.id, 'PROGRAM', program.id, program)" class="delete-comment">Delete</button>
-                        }
-                      </div>
-                      <p class="comment-content">{{ comment.content }}</p>
-                    </div>
-                  }
-                } @else {
-                  <p class="no-comments">No comments yet. Be the first to comment!</p>
-                }
-              </div>
-            </div>
-          }
-
-          <div class="program-actions">
-            @if (!isAdmin) {
-              @if (isParticipant(program)) {
-                <button (click)="leaveProgram(program.id)" class="btn-secondary">Leave Program</button>
-              } @else {
-                <button (click)="joinProgram(program.id)" class="btn-secondary">Join Program</button>
-              }
-            }
-            @if (isAdmin) {
-              <button (click)="startEdit(program)" class="btn-edit">Edit</button>
-              <button (click)="deleteProgram(program.id)" class="btn-delete">Delete</button>
-            }
-          </div>
+          <button (click)="addComment('PROGRAM', program.id, program)" class="btn-comment">Post</button>
         </div>
+
+        <div class="comments-list">
+          @if (program.comments && program.comments.length > 0) {
+          @for (comment of program.comments; track comment.id) {
+          <div class="comment-item">
+            <div class="comment-header">
+              <strong>{{ comment.user?.fullName || 'Anonymous' }}</strong>
+              <span class="comment-date">{{ formatDate(comment.createdAt) }}</span>
+              @if (isLoggedIn() && (comment.user?.id === getCurrentUserId() || isAdmin)) {
+              <button (click)="deleteComment(comment.id, 'PROGRAM', program.id, program)" class="delete-comment">Delete</button>
+              }
+            </div>
+            <p class="comment-content">{{ comment.content }}</p>
+          </div>
+          }
+          } @else {
+          <p class="no-comments">No comments yet. Be the first to comment!</p>
+          }
+        </div>
+      </div>
+      }
+
+      @if (isAdmin) {
+      <div class="program-admin-actions" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; display: flex; gap: 10px;">
+        <button (click)="startEdit(program)" class="btn-edit" style="background-color: #fbbc04; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Edit</button>
+        <button (click)="deleteProgram(program.id)" class="btn-delete" style="background-color: #d93025; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Delete</button>
+      </div>
       }
     </div>
+    }
+  </div>
   }
 </div>

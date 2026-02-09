@@ -75,12 +75,11 @@ export class Programs implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.isAdmin = this.http.isAdmin();
     this.authSub = this.http.authChanged$.subscribe(() => {
-      // When switching accounts, refresh admin flag and like/check state
       this.isAdmin = this.http.isAdmin();
       this.programs.forEach(p => this.loadLikes('PROGRAM', p.id, p));
       this.cdr.detectChanges();
     });
-    // Refresh admin status from backend to ensure accuracy
+
     if (this.http.isLoggedIn()) {
       this.http.refreshUserProfile().subscribe({
         next: (profile: any) => {
@@ -88,7 +87,6 @@ export class Programs implements OnInit, OnDestroy {
           this.isAdmin = profile.isAdmin;
         },
         error: () => {
-          // If refresh fails, use cached value
           this.isAdmin = this.http.isAdmin();
         }
       });
@@ -119,11 +117,15 @@ export class Programs implements OnInit, OnDestroy {
       next: (data: unknown) => {
         try {
           const list = Array.isArray(data) ? (data as Program[]) : [];
-          this.programs = list;
-          this.filteredPrograms = list;
-          // Load likes and comments for each program
+
+          // Sort: Programs starting soon come first
+          this.programs = list.sort((a, b) => {
+            return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+          });
+
+          this.filteredPrograms = [...this.programs];
+
           this.programs.forEach((program) => {
-            // Reset UI state so we don't show stale likes after account switch
             program.likeCount = 0;
             program.isLiked = false;
             this.loadLikes('PROGRAM', program.id, program);
@@ -131,7 +133,7 @@ export class Programs implements OnInit, OnDestroy {
           });
         } finally {
           this.isLoading = false;
-          this.cdr.detectChanges(); // Force change detection
+          this.cdr.detectChanges();
         }
       },
       error: (err) => {
@@ -144,6 +146,14 @@ export class Programs implements OnInit, OnDestroy {
     });
   }
 
+  // --- Helper for Badges ---
+  isHappeningNow(program: Program): boolean {
+    const now = new Date().getTime();
+    const start = new Date(program.startDate).getTime();
+    const end = new Date(program.endDate).getTime();
+    return now >= start && now <= end;
+  }
+
   isParticipant(program: Program): boolean {
     if (!this.http.isLoggedIn() || !program.participants) return false;
     const user = this.http.getCurrentUser();
@@ -151,7 +161,6 @@ export class Programs implements OnInit, OnDestroy {
   }
 
   joinProgram(programId: number): void {
-    // Check if user is logged in
     if (!this.http.isLoggedIn()) {
       if (confirm('You need to login to join a program. Would you like to go to the login page?')) {
         window.location.href = '/login';
@@ -268,6 +277,7 @@ export class Programs implements OnInit, OnDestroy {
     this.selectedImageFile = null;
     this.imagePreview = program.imageUrl || null;
     this.showCreateForm = true;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   cancelEdit(): void {
@@ -306,7 +316,6 @@ export class Programs implements OnInit, OnDestroy {
       return;
     }
 
-    // If image is selected but not uploaded yet, upload it first
     if (this.selectedImageFile && !this.newProgram.imageUrl) {
       this.uploadImage();
       const checkUpload = setInterval(() => {
@@ -331,9 +340,9 @@ export class Programs implements OnInit, OnDestroy {
         isActive: this.editingProgram.isActive
       }).subscribe({
         next: () => {
-          this.cancelEdit(); // Hide form first
-          this.loadPrograms(); // Then reload the list
-          this.cdr.detectChanges(); // Force change detection
+          this.cancelEdit();
+          this.loadPrograms();
+          this.cdr.detectChanges();
           setTimeout(() => {
             alert('Program updated successfully!');
           }, 100);
@@ -345,9 +354,9 @@ export class Programs implements OnInit, OnDestroy {
     } else {
       this.http.post('/api/admin/programs', this.newProgram).subscribe({
         next: () => {
-          this.cancelEdit(); // Hide form first
-          this.loadPrograms(); // Then reload the list
-          this.cdr.detectChanges(); // Force change detection
+          this.cancelEdit();
+          this.loadPrograms();
+          this.cdr.detectChanges();
           setTimeout(() => {
             alert('Program created successfully!');
           }, 100);
@@ -363,8 +372,8 @@ export class Programs implements OnInit, OnDestroy {
     if (confirm('Are you sure you want to delete this program?')) {
       this.http.delete(`/api/admin/programs/${programId}`).subscribe({
         next: () => {
-          this.loadPrograms(); // Reload first
-          this.cdr.detectChanges(); // Force change detection
+          this.loadPrograms();
+          this.cdr.detectChanges();
           setTimeout(() => {
             alert('Program deleted successfully!');
           }, 100);
@@ -388,7 +397,6 @@ export class Programs implements OnInit, OnDestroy {
       }
     });
 
-    // Always call check: backend returns { liked: false } when not logged in
     this.http.get(`/api/likes/${entityType}/${entityId}/check`).subscribe({
       next: (data: any) => {
         item.isLiked = data.liked || false;
@@ -425,7 +433,6 @@ export class Programs implements OnInit, OnDestroy {
       entityId: entityId.toString()
     }).subscribe({
       next: () => {
-        // After toggling like, refresh just this item's likes from the server
         this.loadLikes(entityType, entityId, item);
       },
       error: (err: any) => {
@@ -446,48 +453,44 @@ export class Programs implements OnInit, OnDestroy {
     }
   }
 
-  // ... (keep existing code)
-
-    addComment(entityType: string, entityId: number, item: any, confirmed: boolean = false): void {
-      if (!this.http.isLoggedIn()) {
-        if (confirm('You need to login to comment. Would you like to go to the login page?')) {
-          window.location.href = '/login';
-        }
-        return;
+  addComment(entityType: string, entityId: number, item: any): void {
+    if (!this.http.isLoggedIn()) {
+      if (confirm('You need to login to comment. Would you like to go to the login page?')) {
+        window.location.href = '/login';
       }
-
-      const commentText = this.commentTexts[entityId]?.trim();
-      if (!commentText || commentText.length < 1) {
-        return;
-      }
-
-      this.http.post('/api/comments', {
-        entityType: entityType,
-        entityId: entityId.toString(),
-        content: commentText,
-      }).subscribe({
-        next: () => {
-          this.commentTexts[entityId] = '';
-          this.loadComments(entityType, entityId, item);
-        },
-        error: (err: any) => {
-          // --- CHANGED LOGIC: HARD BLOCK ---
-          if (err.status === 409 && err.error?.error === 'PROFANITY_WARNING') {
-            alert(err.error.message);
-          }
-          // --- END CHANGED LOGIC ---
-          else if (err.status === 401 || err.status === 403) {
-            if (confirm('You need to login to comment. Would you like to go to the login page?')) {
-              window.location.href = '/login';
-            }
-          } else {
-            alert(err.message || 'Failed to add comment');
-          }
-        }
-      });
+      return;
     }
 
-  // ... (keep existing code)
+    const commentText = this.commentTexts[entityId]?.trim();
+    if (!commentText || commentText.length < 1) {
+      return;
+    }
+
+    this.http.post('/api/comments', {
+      entityType: entityType,
+      entityId: entityId.toString(),
+      content: commentText
+    }).subscribe({
+      next: () => {
+        this.commentTexts[entityId] = '';
+        this.loadComments(entityType, entityId, item);
+      },
+      error: (err: any) => {
+        // --- STRICT PROFANITY BLOCK ---
+        if (err.status === 409 && err.error?.error === 'PROFANITY_WARNING') {
+          alert(err.error.message); // Show message only. No retry logic.
+        }
+        // -----------------------------
+        else if (err.status === 401 || err.status === 403) {
+          if (confirm('You need to login to comment. Would you like to go to the login page?')) {
+            window.location.href = '/login';
+          }
+        } else {
+          alert(err.message || 'Failed to add comment');
+        }
+      }
+    });
+  }
 
   deleteComment(commentId: number, entityType: string, entityId: number, item: any): void {
     if (confirm('Are you sure you want to delete this comment?')) {
