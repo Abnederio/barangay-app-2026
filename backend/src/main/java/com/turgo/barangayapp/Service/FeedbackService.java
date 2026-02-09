@@ -20,12 +20,33 @@ public class FeedbackService {
 
     // Same Profanity List as Comments
     private static final List<String> BAD_WORDS = Arrays.asList(
+            // --- English Common ---
             "fuck", "shit", "bitch", "asshole", "dick", "pussy", "cunt", "cock",
             "bastard", "slut", "whore", "damn", "crap", "piss", "nigger", "nigga", "fag", "faggot",
+
+            // --- Filipino Common ---
             "puta", "putangina", "gago", "tanga", "bobo", "ulol", "tarantado",
             "kupal", "kantot", "pekpek", "tite", "etits", "burat", "puke", "keps",
             "hindot", "punyeta", "inutil", "buwisit", "leche", "pakshet", "ogag",
-            "ungas", "siraulo", "buang", "hudas", "animal"
+            "ungas", "siraulo", "buang", "hudas", "animal",
+
+            // --- Obfuscated / Leet Speak (English) ---
+            "f*ck", "fck", "fvck", "fuc", "fuhck", "fucc",
+            "sh*t", "sh!t", "sh1t", "s*it", "shiit",
+            "b*tch", "b!tch", "biatch", "b1tch",
+            "a$$", "a$$hole", "assh0le", "@ss",
+            "d*ck", "d1ck", "d!ck",
+            "p*ssy", "puss", "pucy",
+
+            // --- Obfuscated / Leet Speak (Filipino) ---
+            "put@", "put4", "ptangina", "tangina", "t@ngina", "tngina", "pota", "potangina",
+            "g@go", "g4go", "gag0",
+            "t@nga", "t4nga", "tang@",
+            "b0bo", "b0b0", "bob0",
+            "ul0l", "vlol",
+            "kntot", "k@ntot",
+            "kup@l", "kup4l",
+            "h1ndot", "hind0t"
     );
 
     // --- CREATE ---
