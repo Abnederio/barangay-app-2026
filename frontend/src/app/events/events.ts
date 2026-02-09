@@ -68,12 +68,11 @@ export class Events implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.isAdmin = this.http.isAdmin();
     this.authSub = this.http.authChanged$.subscribe(() => {
-      // When switching accounts, refresh admin flag and like/check state
       this.isAdmin = this.http.isAdmin();
       this.events.forEach(e => this.loadLikes('EVENT', e.id, e));
       this.cdr.detectChanges();
     });
-    // Refresh admin status from backend to ensure accuracy
+
     if (this.http.isLoggedIn()) {
       this.http.refreshUserProfile().subscribe({
         next: (profile: any) => {
@@ -112,16 +111,17 @@ export class Events implements OnInit, OnDestroy {
       next: (data: unknown) => {
         try {
           const list = Array.isArray(data) ? (data as Event[]) : [];
-          // Sort by eventDate descending (newest first)
+
+          // Sort Logic: Closest upcoming events first (Ascending)
           this.events = list.sort((a, b) => {
             const dateA = new Date(a.eventDate).getTime();
             const dateB = new Date(b.eventDate).getTime();
-            return dateB - dateA;
+            return dateA - dateB;
           });
+
           this.filteredEvents = [...this.events];
-          // Load likes and comments for each event
+
           this.events.forEach((event) => {
-            // Reset UI state so we don't show stale likes after account switch
             event.likeCount = 0;
             event.isLiked = false;
             this.loadLikes('EVENT', event.id, event);
@@ -129,31 +129,32 @@ export class Events implements OnInit, OnDestroy {
           });
         } finally {
           this.isLoading = false;
-          this.cdr.detectChanges(); // Force change detection after loading
+          this.cdr.detectChanges();
         }
       },
       error: (err) => {
         this.error = 'Failed to load events';
         this.isLoading = false;
-        this.events = [];
-        this.filteredEvents = [];
         this.cdr.detectChanges();
       }
     });
   }
+
+  // --- Admin Form Logic ---
 
   startEdit(event: Event): void {
     this.editingEvent = event;
     this.newEvent = {
       title: event.title,
       description: event.description || '',
-      eventDate: this.formatDateForInput(event.eventDate),
+      eventDate: this.formatDateForInput(event.eventDate), // Format for input
       location: event.location || '',
       imageUrl: event.imageUrl || ''
     };
     this.selectedImageFile = null;
     this.imagePreview = event.imageUrl || null;
     this.showCreateForm = true;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   cancelEdit(): void {
@@ -163,51 +164,6 @@ export class Events implements OnInit, OnDestroy {
     this.selectedImageFile = null;
     this.imagePreview = null;
     this.formErrors = {};
-  }
-
-  onImageSelected(event: any): void {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        alert('Image size must be less than 10MB');
-        return;
-      }
-      if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
-        return;
-      }
-      this.selectedImageFile = file;
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.imagePreview = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  uploadImage(): void {
-    if (!this.selectedImageFile) {
-      return;
-    }
-
-    this.isUploadingImage = true;
-    this.http.uploadImage(this.selectedImageFile).subscribe({
-      next: (response: any) => {
-        this.newEvent.imageUrl = response.imageUrl;
-        this.isUploadingImage = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        alert(err.message || 'Failed to upload image');
-        this.isUploadingImage = false;
-      }
-    });
-  }
-
-  removeImage(): void {
-    this.selectedImageFile = null;
-    this.imagePreview = null;
-    this.newEvent.imageUrl = '';
   }
 
   formatDateForInput(dateString: string): string {
@@ -234,7 +190,6 @@ export class Events implements OnInit, OnDestroy {
       return;
     }
 
-    // If image is selected but not uploaded yet, upload it first
     if (this.selectedImageFile && !this.newEvent.imageUrl) {
       this.uploadImage();
       const checkUpload = setInterval(() => {
@@ -270,27 +225,12 @@ export class Events implements OnInit, OnDestroy {
     } else {
       this.http.post('/api/admin/events', this.newEvent).subscribe({
         next: (response: any) => {
-          // Reset form first
-          this.newEvent = {
-            title: '',
-            description: '',
-            eventDate: '',
-            location: '',
-            imageUrl: ''
-          };
-          this.selectedImageFile = null;
-          this.imagePreview = null;
-          this.formErrors = {};
-          this.showCreateForm = false;
-          this.editingEvent = null;
-          // Reload events to show the new one - use a small delay to ensure backend has saved
-          setTimeout(() => {
-            this.loadEvents();
-            this.cdr.detectChanges();
-          }, 200);
+          this.cancelEdit();
+          this.loadEvents();
+          this.cdr.detectChanges();
           setTimeout(() => {
             alert('Event created successfully!');
-          }, 300);
+          }, 100);
         },
         error: (err) => {
           alert(err.message || 'Failed to create event');
@@ -303,7 +243,8 @@ export class Events implements OnInit, OnDestroy {
     if (confirm('Are you sure you want to delete this event?')) {
       this.http.delete(`/api/admin/events/${eventId}`).subscribe({
         next: () => {
-          this.loadEvents(); // Reload first
+          this.loadEvents();
+          this.cdr.detectChanges();
           setTimeout(() => {
             alert('Event deleted successfully!');
           }, 100);
@@ -314,6 +255,52 @@ export class Events implements OnInit, OnDestroy {
       });
     }
   }
+
+  // --- Image Handling ---
+
+  onImageSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        alert('Image size must be less than 10MB');
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      this.selectedImageFile = file;
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.imagePreview = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  uploadImage(): void {
+    if (!this.selectedImageFile) return;
+    this.isUploadingImage = true;
+    this.http.uploadImage(this.selectedImageFile).subscribe({
+      next: (response: any) => {
+        this.newEvent.imageUrl = response.imageUrl;
+        this.isUploadingImage = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        alert(err.message || 'Failed to upload image');
+        this.isUploadingImage = false;
+      }
+    });
+  }
+
+  removeImage(): void {
+    this.selectedImageFile = null;
+    this.imagePreview = null;
+    this.newEvent.imageUrl = '';
+  }
+
+  // --- Likes & Comments ---
 
   loadLikes(entityType: string, entityId: number, item: any): void {
     this.http.get(`/api/likes/${entityType}/${entityId}`).subscribe({
@@ -327,7 +314,6 @@ export class Events implements OnInit, OnDestroy {
       }
     });
 
-    // Always call check: backend returns { liked: false } when not logged in
     this.http.get(`/api/likes/${entityType}/${entityId}/check`).subscribe({
       next: (data: any) => {
         item.isLiked = data.liked || false;
@@ -364,7 +350,6 @@ export class Events implements OnInit, OnDestroy {
       entityId: entityId.toString()
     }).subscribe({
       next: () => {
-        // After toggling like, refresh just this item's likes from the server
         this.loadLikes(entityType, entityId, item);
       },
       error: (err: any) => {
@@ -385,48 +370,44 @@ export class Events implements OnInit, OnDestroy {
     }
   }
 
-  // ... (keep existing code)
-
-    addComment(entityType: string, entityId: number, item: any, confirmed: boolean = false): void {
-      if (!this.http.isLoggedIn()) {
-        if (confirm('You need to login to comment. Would you like to go to the login page?')) {
-          window.location.href = '/login';
-        }
-        return;
+  addComment(entityType: string, entityId: number, item: any): void {
+    if (!this.http.isLoggedIn()) {
+      if (confirm('You need to login to comment. Would you like to go to the login page?')) {
+        window.location.href = '/login';
       }
-
-      const commentText = this.commentTexts[entityId]?.trim();
-      if (!commentText || commentText.length < 1) {
-        return;
-      }
-
-      this.http.post('/api/comments', {
-        entityType: entityType,
-        entityId: entityId.toString(),
-        content: commentText,
-      }).subscribe({
-        next: () => {
-          this.commentTexts[entityId] = '';
-          this.loadComments(entityType, entityId, item);
-        },
-        error: (err: any) => {
-          // --- CHANGED LOGIC: HARD BLOCK ---
-          if (err.status === 409 && err.error?.error === 'PROFANITY_WARNING') {
-            alert(err.error.message);
-          }
-          // --- END CHANGED LOGIC ---
-          else if (err.status === 401 || err.status === 403) {
-            if (confirm('You need to login to comment. Would you like to go to the login page?')) {
-              window.location.href = '/login';
-            }
-          } else {
-            alert(err.message || 'Failed to add comment');
-          }
-        }
-      });
+      return;
     }
 
-  // ... (keep existing code)
+    const commentText = this.commentTexts[entityId]?.trim();
+    if (!commentText || commentText.length < 1) {
+      return;
+    }
+
+    this.http.post('/api/comments', {
+      entityType: entityType,
+      entityId: entityId.toString(),
+      content: commentText
+    }).subscribe({
+      next: () => {
+        this.commentTexts[entityId] = '';
+        this.loadComments(entityType, entityId, item);
+      },
+      error: (err: any) => {
+        // --- STRICT PROFANITY BLOCK ---
+        if (err.status === 409 && err.error?.error === 'PROFANITY_WARNING') {
+          alert(err.error.message); // No retry logic
+        }
+        // -----------------------------
+        else if (err.status === 401 || err.status === 403) {
+          if (confirm('You need to login to comment. Would you like to go to the login page?')) {
+            window.location.href = '/login';
+          }
+        } else {
+          alert(err.message || 'Failed to add comment');
+        }
+      }
+    });
+  }
 
   deleteComment(commentId: number, entityType: string, entityId: number, item: any): void {
     if (confirm('Are you sure you want to delete this comment?')) {
