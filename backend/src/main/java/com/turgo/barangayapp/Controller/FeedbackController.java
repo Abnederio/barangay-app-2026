@@ -2,14 +2,13 @@ package com.turgo.barangayapp.Controller;
 
 import com.turgo.barangayapp.Model.Feedback;
 import com.turgo.barangayapp.Model.User;
-import com.turgo.barangayapp.Repository.FeedbackRepository;
+import com.turgo.barangayapp.Service.FeedbackService; // Import Service
 import com.turgo.barangayapp.Service.UserServices;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
 
@@ -19,8 +18,8 @@ import java.util.Optional;
 public class FeedbackController {
 
     @Autowired
-    private FeedbackRepository feedbackRepository;
-    
+    private FeedbackService feedbackService; // Use Service
+
     @Autowired
     private UserServices userServices;
 
@@ -28,76 +27,63 @@ public class FeedbackController {
     public ResponseEntity<?> submitFeedback(@RequestBody Map<String, String> request, Authentication authentication) {
         String email = authentication.getName();
         Optional<User> userOpt = userServices.findByEmail(email);
-        
+
         if (userOpt.isEmpty()) {
             return ResponseEntity.status(401).body(Map.of("error", "User not found"));
         }
-        
-        String message = request.get("message");
-        if (message == null || message.trim().length() < 10) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Feedback must be at least 10 characters"));
+
+        try {
+            Feedback feedback = feedbackService.submitFeedback(request, userOpt.get());
+            return ResponseEntity.ok(feedback);
+        } catch (IllegalArgumentException e) {
+            // Check specifically for the profanity flag
+            if ("PROFANITY_DETECTED".equals(e.getMessage())) {
+                return ResponseEntity.status(409).body(Map.of(
+                        "error", "PROFANITY_WARNING",
+                        "message", "Please remove the profane words from your feedback."
+                ));
+            }
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
-        
-        Feedback feedback = new Feedback();
-        feedback.setMessage(message.trim());
-        feedback.setUser(userOpt.get());
-        
-        return ResponseEntity.ok(feedbackRepository.save(feedback));
     }
 
     @GetMapping("/admin/feedback")
     public ResponseEntity<?> getAllFeedback(Authentication authentication) {
-        String email = authentication.getName();
-        Optional<User> userOpt = userServices.findByEmail(email);
-        
-        if (userOpt.isEmpty() || !userOpt.get().isAdmin()) {
-            return ResponseEntity.status(403).body(Map.of("error", "Admin access required"));
-        }
-        
-        return ResponseEntity.ok(feedbackRepository.findAllByOrderBySubmittedAtDesc());
+        if (!isAdmin(authentication)) return ResponseEntity.status(403).body(Map.of("error", "Admin access required"));
+
+        return ResponseEntity.ok(feedbackService.getAllFeedback());
     }
 
     @PostMapping("/admin/feedback/{id}/reply")
     public ResponseEntity<?> replyToFeedback(@PathVariable Long id, @RequestBody Map<String, String> request, Authentication authentication) {
-        String email = authentication.getName();
-        Optional<User> userOpt = userServices.findByEmail(email);
-        
-        if (userOpt.isEmpty() || !userOpt.get().isAdmin()) {
-            return ResponseEntity.status(403).body(Map.of("error", "Admin access required"));
-        }
-        
-        Optional<Feedback> feedbackOpt = feedbackRepository.findById(id);
-        if (feedbackOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        
-        Feedback feedback = feedbackOpt.get();
+        if (!isAdmin(authentication)) return ResponseEntity.status(403).body(Map.of("error", "Admin access required"));
+
         String reply = request.get("reply");
         if (reply == null || reply.trim().isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Reply cannot be empty"));
         }
-        
-        feedback.setAdminReply(reply.trim());
-        feedback.setRepliedAt(LocalDateTime.now());
-        feedback.setRead(true);
-        
-        return ResponseEntity.ok(feedbackRepository.save(feedback));
+
+        try {
+            return ResponseEntity.ok(feedbackService.replyToFeedback(id, reply));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @DeleteMapping("/admin/feedback/{id}")
     public ResponseEntity<?> deleteFeedback(@PathVariable Long id, Authentication authentication) {
+        if (!isAdmin(authentication)) return ResponseEntity.status(403).body(Map.of("error", "Admin access required"));
+
+        if (feedbackService.deleteFeedback(id)) {
+            return ResponseEntity.ok(Map.of("message", "Feedback deleted successfully"));
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    private boolean isAdmin(Authentication authentication) {
+        if (authentication == null) return false;
         String email = authentication.getName();
         Optional<User> userOpt = userServices.findByEmail(email);
-        
-        if (userOpt.isEmpty() || !userOpt.get().isAdmin()) {
-            return ResponseEntity.status(403).body(Map.of("error", "Admin access required"));
-        }
-        
-        if (!feedbackRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        
-        feedbackRepository.deleteById(id);
-        return ResponseEntity.ok(Map.of("message", "Feedback deleted successfully"));
+        return userOpt.isPresent() && userOpt.get().isAdmin();
     }
 }

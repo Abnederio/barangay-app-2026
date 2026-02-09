@@ -31,13 +31,15 @@ export class Feedback implements OnInit, OnDestroy {
   isLoading: boolean = false;
   error: string = '';
   isAdmin: boolean = false;
-  
+
+  // User Form Variables
   message: string = '';
   formErrors: { [key: string]: string } = {};
   successMessage: string = '';
   showSuccessAlert: boolean = false;
-  
-  // Admin reply
+  isSubmitting: boolean = false;
+
+  // Admin Reply Variables
   replyingTo: number | null = null;
   replyText: { [key: number]: string } = {};
   private routerSub?: Subscription;
@@ -50,12 +52,11 @@ export class Feedback implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadData();
-    
+
     // Reload data when navigating to this route
     this.routerSub = this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe(() => {
-      // Only reload if we're on the feedback route
       if (this.router.url.includes('/feedback') || this.router.url === '/feedback') {
         this.loadData();
       }
@@ -84,28 +85,25 @@ export class Feedback implements OnInit, OnDestroy {
 
   private loadData(): void {
     this.isAdmin = this.http.isAdmin();
-    
-    // Always try to load feedback immediately if logged in
-    // The backend will return 403 if not admin, which we handle gracefully
+
     if (this.http.isLoggedIn()) {
-      // Try loading immediately - backend will authorize
+      // If user is logged in, try to load feedback (backend will block if not admin)
       this.loadFeedback();
     } else {
-      // If not logged in, ensure feedback is empty
       this.feedback = [];
       this.filteredFeedback = [];
       this.isLoading = false;
       this.cdr.detectChanges();
       return;
     }
-    
-    // Refresh admin status from backend to ensure accuracy and reload data
+
+    // Refresh admin status
     this.http.refreshUserProfile().subscribe({
       next: (profile: any) => {
         this.http.updateUserProfile(profile);
         const wasAdmin = this.isAdmin;
         this.isAdmin = profile.isAdmin;
-        // If admin status changed or we just confirmed admin, reload feedback
+
         if (this.isAdmin && (!wasAdmin || this.feedback.length === 0)) {
           this.loadFeedback();
         }
@@ -113,7 +111,6 @@ export class Feedback implements OnInit, OnDestroy {
       },
       error: () => {
         this.isAdmin = this.http.isAdmin();
-        // Still try to load feedback even if profile refresh fails
         if (this.isAdmin && this.http.isLoggedIn()) {
           this.loadFeedback();
         }
@@ -129,17 +126,22 @@ export class Feedback implements OnInit, OnDestroy {
       this.cdr.detectChanges();
       return;
     }
-    this.isLoading = true;
+
+    // Only show loading indicator if we are actually expecting data (usually admins)
+    if (this.isAdmin) {
+        this.isLoading = true;
+    }
+
     this.error = '';
     this.http.get('/api/admin/feedback').subscribe({
-      next: (data: FeedbackItem[]) => {
+      next: (data: any) => {
         this.feedback = Array.isArray(data) ? data : [];
         this.filteredFeedback = this.feedback;
         this.isLoading = false;
         this.cdr.detectChanges();
       },
       error: (err: any) => {
-        // Only show error for non-auth errors
+        // If 403/401, it just means they are a regular user, so no feedback to show
         if (err.status !== 401 && err.status !== 403) {
           this.error = 'Failed to load feedback';
         }
@@ -152,7 +154,6 @@ export class Feedback implements OnInit, OnDestroy {
   }
 
   submitFeedback(): void {
-    // Check if user is logged in
     if (!this.http.isLoggedIn()) {
       if (confirm('You need to login to submit feedback. Would you like to go to the login page?')) {
         window.location.href = '/login';
@@ -162,38 +163,52 @@ export class Feedback implements OnInit, OnDestroy {
 
     this.formErrors = {};
     this.successMessage = '';
-    
+
     if (!this.message || this.message.trim().length < 10) {
       this.formErrors['message'] = 'Feedback must be at least 10 characters';
       return;
     }
 
+    this.isSubmitting = true;
     this.http.post('/api/feedback', { message: this.message }).subscribe({
       next: () => {
-        this.successMessage = 'Thank you for your feedback! Your feedback has been submitted successfully.';
+        this.successMessage = 'Thank you for your feedback! It has been submitted successfully.';
         this.showSuccessAlert = true;
         this.message = '';
         this.formErrors = {};
+        this.isSubmitting = false;
+
         // Auto-hide success message after 5 seconds
         setTimeout(() => {
           this.showSuccessAlert = false;
           this.successMessage = '';
         }, 5000);
+
+        // If an admin submits feedback, reload the list so they see it
         if (this.isAdmin) {
           this.loadFeedback();
         }
+        this.cdr.detectChanges();
       },
       error: (err: any) => {
-        if (err.status === 401 || err.status === 403) {
-          if (confirm('You need to login to submit feedback. Would you like to go to the login page?')) {
+        this.isSubmitting = false;
+
+        // --- STRICT PROFANITY BLOCK ---
+        if (err.status === 409 && err.error?.error === 'PROFANITY_WARNING') {
+           alert(err.error.message); // Show alert, do not clear form
+        } else if (err.status === 401 || err.status === 403) {
+          if (confirm('Session expired. You need to login to submit feedback. Go to login?')) {
             window.location.href = '/login';
           }
         } else {
           this.formErrors['general'] = err.error?.error || err.message || 'Failed to submit feedback';
         }
+        this.cdr.detectChanges();
       }
     });
   }
+
+  // --- Admin Logic ---
 
   startReply(feedbackId: number): void {
     this.replyingTo = feedbackId;
@@ -233,8 +248,8 @@ export class Feedback implements OnInit, OnDestroy {
 
     this.http.delete(`/api/admin/feedback/${feedbackId}`).subscribe({
       next: () => {
-        alert('Feedback deleted successfully!');
-        this.loadFeedback();
+        this.loadFeedback(); // Reload list first
+        setTimeout(() => alert('Feedback deleted successfully!'), 100);
       },
       error: (err: any) => {
         alert(err.error?.error || err.message || 'Failed to delete feedback');
