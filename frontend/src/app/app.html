@@ -1,7 +1,7 @@
 <header class="navbar">
   <div class="navbar-brand">
     <a routerLink="/" class="brand-link">
-      <img src="/assets/images/Manila_Logo.png" alt="Barangay Logo" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+      <img src="/assets/images/Manila_Logo.png" alt="Barangay Logo" class="logo-img">
       <span class="logo-text">Barangay 418 Zone 43</span>
     </a>
   </div>
@@ -16,14 +16,14 @@
     <a routerLink="/feedback" routerLinkActive="active" class="nav-link">Feedback</a>
 
     @if (!isLoggedIn) {
-      <a routerLink="/login" routerLinkActive="active" class="nav-link login-btn">Login</a>
-      <a routerLink="/signup" routerLinkActive="active" class="nav-link signup-btn">Sign Up</a>
+    <a routerLink="/login" routerLinkActive="active" class="nav-link login-btn">Login</a>
+    <a routerLink="/signup" routerLinkActive="active" class="nav-link signup-btn">Sign Up</a>
     }
     @else {
-      @if (isAdmin) {
-        <span class="admin-badge">Admin</span>
-      }
-      <button (click)="logout()" class="logout-btn">Logout</button>
+    @if (isAdmin) {
+    <span class="admin-badge">Admin</span>
+    }
+    <button (click)="logout()" class="logout-btn">Logout</button>
     }
   </nav>
 </header>
@@ -36,8 +36,8 @@
 
 <div *ngIf="showIdleWarning" class="idle-overlay">
   <div class="idle-modal">
-    <h2>Session Inactivity</h2>
-    <p>You have been idle for a while. For security, you will be logged out in:</p>
+    <h2 class="warning-title">Session Inactivity</h2>
+    <p>You have been idle for a while. You will be logged out in:</p>
     <div class="countdown-timer">{{ idleCountdown }} seconds</div>
     <div class="modal-actions">
       <button class="keep-alive-btn" (click)="idleService.startWatching()">Keep me logged in</button>

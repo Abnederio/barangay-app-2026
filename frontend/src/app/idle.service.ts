@@ -10,6 +10,7 @@ import { switchMap } from 'rxjs/operators';
 export class IdleService {
   private idleTimerSubscription?: Subscription;
   private countdownSubscription?: Subscription;
+  private readonly WARNING_TIME = 10;
 
   public showCountdownSource = new BehaviorSubject<boolean>(false);
   public countdownValueSource = new BehaviorSubject<number>(10);
@@ -24,10 +25,10 @@ export class IdleService {
     this.stopWatching();
     if (!this.http.isLoggedIn()) return;
 
-    // 2 minutes for admin (120s), 5 minutes for normal users (300s)
     const isAdmin = this.http.isAdmin();
-    const idleTime = isAdmin ? 20 : 20;
-    const warningTime = 10;
+    // 2 minutes for admin (120s), 5 minutes for normal users (300s)
+    const idleTime = isAdmin ? 30 : 30;
+    const warningTime = this.WARNING_TIME;
     const idleSeconds = idleTime - warningTime;
 
     const activity$ = merge(
@@ -41,7 +42,10 @@ export class IdleService {
       this.idleTimerSubscription = activity$.pipe(
         switchMap(() => timer(idleSeconds * 1000))
       ).subscribe(() => {
-        this.ngZone.run(() => this.startCountdown(warningTime));
+        // Bring execution back into the Angular Zone to show the popup
+        this.ngZone.run(() => {
+          this.startCountdown(warningTime);
+        });
       });
     });
   }
@@ -51,12 +55,14 @@ export class IdleService {
     this.countdownValueSource.next(seconds);
 
     this.countdownSubscription = timer(0, 1000).subscribe(val => {
-      const remaining = seconds - val;
-      if (remaining <= 0) {
-        this.logoutUser();
-      } else {
-        this.countdownValueSource.next(remaining);
-      }
+      this.ngZone.run(() => {
+        const remaining = seconds - val;
+        if (remaining <= 0) {
+          this.logoutUser();
+        } else {
+          this.countdownValueSource.next(remaining);
+        }
+      });
     });
   }
 
