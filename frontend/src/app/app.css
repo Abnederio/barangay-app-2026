@@ -57,17 +57,22 @@
   font-size: 0.95rem;
   font-weight: 500;
   position: relative;
+  /* Ensure default state is explicitly set */
+  transform: translateY(0);
 }
 
-.nav-link:hover {
+/* FIXED: Only apply hover effect if the link is NOT active */
+.nav-link:hover:not(.active) {
   background: linear-gradient(135deg, #f5f5f5 0%, #e9ecef 100%);
   transform: translateY(-2px);
 }
 
+/* FIXED: Force active link to stay flat so it doesn't look hovered */
 .nav-link.active {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  color: white !important;
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  transform: none !important;
 }
 
 .login-btn {
@@ -138,8 +143,6 @@
   }
 }
 
-/* ... existing styles ... */
-
 .idle-overlay {
   position: fixed;
   top: 0;
@@ -150,7 +153,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10000; /* Higher than sticky navbar (1000) */
+  z-index: 10000;
 }
 
 .idle-modal {
