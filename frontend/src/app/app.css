@@ -59,17 +59,14 @@
   position: relative;
 }
 
-/* Updated: Only apply hover effects if the link is NOT active */
-.nav-link:hover:not(.active) {
+.nav-link:hover {
   background: linear-gradient(135deg, #f5f5f5 0%, #e9ecef 100%);
   transform: translateY(-2px);
 }
 
-/* Updated: The active state should be flat (no translateY) to stop the 'always hovered' look */
 .nav-link.active {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white !important;
-  transform: none !important;
+  color: white;
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 

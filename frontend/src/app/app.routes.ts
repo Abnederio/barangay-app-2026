@@ -11,8 +11,7 @@ import { ForgotPassword } from './forgot-password/forgot-password';
 import { Announcements } from './announcements/announcements';
 
 export const routes: Routes = [
-  // This is the correct fix for the persistent "Home" highlight
-  { path: '', component: Home, pathMatch: 'full' },
+  { path: '', component: Home },
   { path: 'login', component: LoginForm },
   { path: 'signup', component: SignupForm },
   { path: 'forgot-password', component: ForgotPassword },
