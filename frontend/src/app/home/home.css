@@ -63,6 +63,8 @@
   flex-wrap: wrap;
 }
 
+/* ... keep existing styles until .btn-hero-primary ... */
+
 .btn-hero-primary,
 .btn-hero-secondary {
   padding: 16px 32px;
@@ -73,6 +75,8 @@
   transition: all 0.3s ease;
   display: inline-block;
   box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  /* Added: reset default transform */
+  transform: translateY(0);
 }
 
 .btn-hero-primary {
@@ -80,9 +84,11 @@
   color: #667eea;
 }
 
+/* Updated: Ensure hover is powerful enough to override global defaults */
 .btn-hero-primary:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+  transform: translateY(-3px) !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3) !important;
+  background: #ffffff;
 }
 
 .btn-hero-secondary {
@@ -94,8 +100,10 @@
 .btn-hero-secondary:hover {
   background: white;
   color: #667eea;
-  transform: translateY(-3px);
+  transform: translateY(-3px) !important;
 }
+
+/* ... keep the rest of the file ... */
 
 /* Container */
 .container {
