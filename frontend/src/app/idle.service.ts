@@ -12,7 +12,7 @@ export class IdleService {
   private countdownSubscription?: Subscription;
 
   public showCountdownSource = new BehaviorSubject<boolean>(false);
-  public countdownValueSource = new BehaviorSubject<number>(20);
+  public countdownValueSource = new BehaviorSubject<number>(10);
 
   constructor(
     private http: MyHttpClient,
@@ -26,8 +26,8 @@ export class IdleService {
 
     // 2 minutes for admin (120s), 5 minutes for normal users (300s)
     const isAdmin = this.http.isAdmin();
-    const idleTime = isAdmin ? 60 : 60;
-    const warningTime = 20;
+    const idleTime = isAdmin ? 20 : 20;
+    const warningTime = 10;
     const idleSeconds = idleTime - warningTime;
 
     const activity$ = merge(
