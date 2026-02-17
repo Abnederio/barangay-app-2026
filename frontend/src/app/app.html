@@ -33,3 +33,14 @@
 </main>
 
 <app-footer></app-footer>
+
+<div *ngIf="showIdleWarning" class="idle-overlay">
+  <div class="idle-modal">
+    <h2>Session Inactivity</h2>
+    <p>You have been idle for a while. For security, you will be logged out in:</p>
+    <div class="countdown-timer">{{ idleCountdown }} seconds</div>
+    <div class="modal-actions">
+      <button class="keep-alive-btn" (click)="idleService.startWatching()">Keep me logged in</button>
+    </div>
+  </div>
+</div>

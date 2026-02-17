@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { MyHttpClient } from './my-http-client';
 import { Footer } from './footer/footer';
 import { filter } from 'rxjs/operators';
+import { IdleService } from './idle.service'; // Import added
 
 @Component({
   selector: 'app-root',
@@ -14,33 +15,41 @@ import { filter } from 'rxjs/operators';
 })
 export class App implements OnInit {
   isAdmin: boolean = false;
+  showIdleWarning: boolean = false; // New property
+  idleCountdown: number = 0;        // New property
 
   constructor(
     private http: MyHttpClient,
-    private router: Router
+    private router: Router,
+    public idleService: IdleService // Injected IdleService
   ) {
-    // Refresh admin status on route changes
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe(() => {
       this.isAdmin = this.http.isAdmin();
+      this.idleService.startWatching(); // Restart timer on navigation
     });
+
+    // Listen for idle warnings
+    this.idleService.showCountdownSource.subscribe(show => this.showIdleWarning = show);
+    this.idleService.countdownValueSource.subscribe(val => this.idleCountdown = val);
   }
 
   ngOnInit(): void {
     this.isAdmin = this.http.isAdmin();
+    this.idleService.startWatching(); // Start watching on load
   }
 
   logout(): void {
-    this.http.logout();
-    this.isAdmin = false;
-    this.router.navigate(['/']).then(() => {
-      // Ensure all pages re-load state (likes/check/admin badge) after account switch
-      window.location.reload();
+    this.idleService.stopWatching(); // Stop timers on logout
+    this.http.logout(); //
+    this.isAdmin = false; //
+    this.router.navigate(['/']).then(() => { //
+      window.location.reload(); //
     });
   }
 
   get isLoggedIn(): boolean {
-    return this.http.isLoggedIn();
+    return this.http.isLoggedIn(); //
   }
 }
