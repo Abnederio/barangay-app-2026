@@ -19,6 +19,17 @@
     <a routerLink="/officials" routerLinkActive="active" class="nav-link">Officials</a>
     <a routerLink="/services" routerLinkActive="active" class="nav-link">Services</a>
     <a routerLink="/feedback" routerLinkActive="active" class="nav-link">Feedback</a>
+
+    @if (!isLoggedIn) {
+    <a routerLink="/login" routerLinkActive="active" class="nav-link login-btn">Login</a>
+    <a routerLink="/signup" routerLinkActive="active" class="nav-link signup-btn">Sign Up</a>
+    }
+    @else {
+    @if (isAdmin) {
+    <span class="admin-badge">Admin</span>
+    }
+    <button (click)="logout()" class="logout-btn">Logout</button>
+    }
   </nav>
 </header>
 
