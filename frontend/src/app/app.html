@@ -6,26 +6,19 @@
     </a>
   </div>
 
-  <!-- Navbar -->
   <nav class="navbar-nav">
-    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">Home</a>
+    <a routerLink="/"
+       routerLinkActive="active"
+       [routerLinkActiveOptions]="{exact: true}"
+       class="nav-link">
+      Home
+    </a>
     <a routerLink="/announcements" routerLinkActive="active" class="nav-link">Announcements</a>
     <a routerLink="/programs" routerLinkActive="active" class="nav-link">Programs</a>
     <a routerLink="/events" routerLinkActive="active" class="nav-link">Events</a>
     <a routerLink="/officials" routerLinkActive="active" class="nav-link">Officials</a>
     <a routerLink="/services" routerLinkActive="active" class="nav-link">Services</a>
     <a routerLink="/feedback" routerLinkActive="active" class="nav-link">Feedback</a>
-
-    @if (!isLoggedIn) {
-    <a routerLink="/login" routerLinkActive="active" class="nav-link login-btn">Login</a>
-    <a routerLink="/signup" routerLinkActive="active" class="nav-link signup-btn">Sign Up</a>
-    }
-    @else {
-    @if (isAdmin) {
-    <span class="admin-badge">Admin</span>
-    }
-    <button (click)="logout()" class="logout-btn">Logout</button>
-    }
   </nav>
 </header>
 
