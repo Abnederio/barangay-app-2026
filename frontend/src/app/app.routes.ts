@@ -11,7 +11,7 @@ import { ForgotPassword } from './forgot-password/forgot-password';
 import { Announcements } from './announcements/announcements';
 
 export const routes: Routes = [
-  { path: '', component: Home },
+  { path: '', component: Home, pathMatch: 'full'},
   { path: 'login', component: LoginForm },
   { path: 'signup', component: SignupForm },
   { path: 'forgot-password', component: ForgotPassword },
