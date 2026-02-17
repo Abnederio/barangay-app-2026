@@ -20,7 +20,7 @@ export class App implements OnInit {
 
   constructor(
     private http: MyHttpClient,
-    private router: Router,
+    public router: Router,
     private cdr: ChangeDetectorRef,
     public idleService: IdleService
   ) {
