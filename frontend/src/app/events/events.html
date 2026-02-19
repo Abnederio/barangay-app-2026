@@ -9,13 +9,18 @@
   </div>
 
   <div class="search-bar">
-    <input
-      type="text"
-      [(ngModel)]="searchQuery"
-      (input)="onSearchChange()"
-      placeholder="🔍 Search events..."
-      class="search-input"
-    />
+    <input type="text" [(ngModel)]="searchQuery" (input)="onSearchChange()" placeholder="🔍 Search events..." class="search-input" />
+  </div>
+
+  <div class="category-filters" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+    <button (click)="filterByCategory('')" [ngStyle]="{'background-color': activeCategoryFilter === '' ? '#007bff' : '#f1f3f4', 'color': activeCategoryFilter === '' ? 'white' : '#333', 'border': 'none', 'padding': '8px 16px', 'border-radius': '20px', 'cursor': 'pointer'}">
+      All
+    </button>
+    @for (cat of categories; track cat) {
+    <button (click)="filterByCategory(cat)" [ngStyle]="{'background-color': activeCategoryFilter === cat ? '#007bff' : '#f1f3f4', 'color': activeCategoryFilter === cat ? 'white' : '#333', 'border': 'none', 'padding': '8px 16px', 'border-radius': '20px', 'cursor': 'pointer'}">
+      {{ getCategoryLabel(cat) }}
+    </button>
+    }
   </div>
 
   @if (showCreateForm && isAdmin) {
@@ -24,16 +29,24 @@
     <div class="form-group">
       <label>Title *</label>
       <input type="text" [(ngModel)]="newEvent.title" [class.error]="formErrors['title']" />
-      @if (formErrors['title']) {
-      <span class="error-text">{{ formErrors['title'] }}</span>
-      }
+      @if (formErrors['title']) { <span class="error-text">{{ formErrors['title'] }}</span> }
     </div>
+
+    <div class="form-group">
+      <label>Category *</label>
+      <select [(ngModel)]="newEvent.category" [class.error]="formErrors['category']" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc;">
+        <option value="">Select Category</option>
+        @for (cat of categories; track cat) {
+        <option [value]="cat">{{ getCategoryLabel(cat) }}</option>
+        }
+      </select>
+      @if (formErrors['category']) { <span class="error-text">{{ formErrors['category'] }}</span> }
+    </div>
+
     <div class="form-group">
       <label>Event Date *</label>
       <input type="datetime-local" [(ngModel)]="newEvent.eventDate" [class.error]="formErrors['eventDate']" />
-      @if (formErrors['eventDate']) {
-      <span class="error-text">{{ formErrors['eventDate'] }}</span>
-      }
+      @if (formErrors['eventDate']) { <span class="error-text">{{ formErrors['eventDate'] }}</span> }
     </div>
     <div class="form-group">
       <label>Location</label>
@@ -50,26 +63,14 @@
       <div class="image-preview">
         <img [src]="imagePreview" alt="Preview" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
         @if (!newEvent.imageUrl) {
-        <button type="button" (click)="uploadImage()" [disabled]="isUploadingImage" class="btn-secondary" style="margin-top: 5px;">
-          {{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}
-        </button>
+        <button type="button" (click)="uploadImage()" [disabled]="isUploadingImage" class="btn-secondary" style="margin-top: 5px;">{{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}</button>
         }
         <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px; margin-left: 5px;">Remove</button>
       </div>
       }
-      @if (newEvent.imageUrl && !imagePreview) {
-      <div class="image-preview">
-        <img [src]="newEvent.imageUrl" alt="Current image" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
-        <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px;">Remove</button>
-      </div>
-      }
     </div>
-    <button (click)="saveEvent()" class="btn-primary">
-      {{ editingEvent ? 'Update Event' : 'Create Event' }}
-    </button>
-    @if (editingEvent) {
-    <button (click)="cancelEdit()" class="btn-secondary" style="margin-left: 10px;">Cancel</button>
-    }
+    <button (click)="saveEvent()" class="btn-primary">{{ editingEvent ? 'Update Event' : 'Create Event' }}</button>
+    @if (editingEvent) { <button (click)="cancelEdit()" class="btn-secondary" style="margin-left: 10px;">Cancel</button> }
   </div>
   }
 
@@ -79,11 +80,7 @@
   <div class="error">{{ error }}</div>
   } @else if (filteredEvents.length === 0) {
   <div class="no-events">
-    @if (searchQuery) {
-    <p>No events found matching "{{ searchQuery }}"</p>
-    } @else {
-    <p>No upcoming events available.</p>
-    }
+    <p>No events found.</p>
   </div>
   } @else {
   <div class="events-list">
@@ -97,41 +94,31 @@
         <span class="badge upcoming" style="background-color: #3498db; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.8em; margin-left: 10px;">📅 Upcoming</span>
       </div>
 
+      @if (event.eventCategory) {
+      <span class="badge" style="background-color: #e0e0e0; color: #333; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; margin: 10px 0; display: inline-block;">🏷️ {{ getCategoryLabel(event.eventCategory) }}</span>
+      }
+
       <div class="event-details" style="margin: 10px 0; font-size: 0.9em; color: #555;">
         <p><strong>📅 Date:</strong> {{ formatDate(event.eventDate) }}</p>
-        @if (event.location) {
-        <p><strong>📍 Location:</strong> {{ event.location }}</p>
-        }
+        @if (event.location) { <p><strong>📍 Location:</strong> {{ event.location }}</p> }
       </div>
 
       <p class="description">{{ event.description }}</p>
 
       <div class="interactions">
-        <button
-          (click)="toggleLike('EVENT', event.id, event)"
-          class="like-btn"
-          [class.liked]="event.isLiked">
+        <button (click)="toggleLike('EVENT', event.id, event)" class="like-btn" [class.liked]="event.isLiked">
           <span class="heart">{{ event.isLiked ? '❤️' : '🤍' }}</span>
           <span class="like-count">{{ event.likeCount || 0 }}</span>
         </button>
-        <button
-          (click)="toggleComments(event.id)"
-          class="comment-btn">
-          💬 Comment
-        </button>
+        <button (click)="toggleComments(event.id)" class="comment-btn">💬 Comment</button>
       </div>
 
       @if (expandedComments.has(event.id)) {
       <div class="comments-section">
         <div class="comment-form">
-                <textarea
-                  [(ngModel)]="commentTexts[event.id]"
-                  placeholder="Write a comment..."
-                  rows="2"
-                ></textarea>
+          <textarea [(ngModel)]="commentTexts[event.id]" placeholder="Write a comment..." rows="2"></textarea>
           <button (click)="addComment('EVENT', event.id, event)" class="btn-comment">Post</button>
         </div>
-
         <div class="comments-list">
           @if (event.comments && event.comments.length > 0) {
           @for (comment of event.comments; track comment.id) {
@@ -146,9 +133,7 @@
             <p class="comment-content">{{ comment.content }}</p>
           </div>
           }
-          } @else {
-          <p class="no-comments">No comments yet. Be the first to comment!</p>
-          }
+          } @else { <p class="no-comments">No comments yet.</p> }
         </div>
       </div>
       }

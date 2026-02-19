@@ -9,13 +9,18 @@
   </div>
 
   <div class="search-bar">
-    <input
-      type="text"
-      [(ngModel)]="searchQuery"
-      (input)="onSearchChange()"
-      placeholder="🔍 Search programs..."
-      class="search-input"
-    />
+    <input type="text" [(ngModel)]="searchQuery" (input)="onSearchChange()" placeholder="🔍 Search programs..." class="search-input" />
+  </div>
+
+  <div class="category-filters" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+    <button (click)="filterByCategory('')" [ngStyle]="{'background-color': activeCategoryFilter === '' ? '#007bff' : '#f1f3f4', 'color': activeCategoryFilter === '' ? 'white' : '#333', 'border': 'none', 'padding': '8px 16px', 'border-radius': '20px', 'cursor': 'pointer'}">
+      All
+    </button>
+    @for (cat of categories; track cat) {
+    <button (click)="filterByCategory(cat)" [ngStyle]="{'background-color': activeCategoryFilter === cat ? '#007bff' : '#f1f3f4', 'color': activeCategoryFilter === cat ? 'white' : '#333', 'border': 'none', 'padding': '8px 16px', 'border-radius': '20px', 'cursor': 'pointer'}">
+      {{ getCategoryLabel(cat) }}
+    </button>
+    }
   </div>
 
   @if (showCreateForm && isAdmin) {
@@ -24,23 +29,29 @@
     <div class="form-group">
       <label>Name *</label>
       <input type="text" [(ngModel)]="newProgram.name" [class.error]="formErrors['name']" />
-      @if (formErrors['name']) {
-      <span class="error-text">{{ formErrors['name'] }}</span>
-      }
+      @if (formErrors['name']) { <span class="error-text">{{ formErrors['name'] }}</span> }
     </div>
+
+    <div class="form-group">
+      <label>Category *</label>
+      <select [(ngModel)]="newProgram.category" [class.error]="formErrors['category']" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc;">
+        <option value="">Select Category</option>
+        @for (cat of categories; track cat) {
+        <option [value]="cat">{{ getCategoryLabel(cat) }}</option>
+        }
+      </select>
+      @if (formErrors['category']) { <span class="error-text">{{ formErrors['category'] }}</span> }
+    </div>
+
     <div class="form-group">
       <label>Start Date *</label>
       <input type="datetime-local" [(ngModel)]="newProgram.startDate" [class.error]="formErrors['startDate']" />
-      @if (formErrors['startDate']) {
-      <span class="error-text">{{ formErrors['startDate'] }}</span>
-      }
+      @if (formErrors['startDate']) { <span class="error-text">{{ formErrors['startDate'] }}</span> }
     </div>
     <div class="form-group">
       <label>End Date *</label>
       <input type="datetime-local" [(ngModel)]="newProgram.endDate" [class.error]="formErrors['endDate']" />
-      @if (formErrors['endDate']) {
-      <span class="error-text">{{ formErrors['endDate'] }}</span>
-      }
+      @if (formErrors['endDate']) { <span class="error-text">{{ formErrors['endDate'] }}</span> }
     </div>
     <div class="form-group">
       <label>Description</label>
@@ -53,26 +64,14 @@
       <div class="image-preview">
         <img [src]="imagePreview" alt="Preview" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
         @if (!newProgram.imageUrl) {
-        <button type="button" (click)="uploadImage()" [disabled]="isUploadingImage" class="btn-secondary" style="margin-top: 5px;">
-          {{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}
-        </button>
+        <button type="button" (click)="uploadImage()" [disabled]="isUploadingImage" class="btn-secondary" style="margin-top: 5px;">{{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}</button>
         }
         <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px; margin-left: 5px;">Remove</button>
       </div>
       }
-      @if (newProgram.imageUrl && !imagePreview) {
-      <div class="image-preview">
-        <img [src]="newProgram.imageUrl" alt="Current image" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
-        <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px;">Remove</button>
-      </div>
-      }
     </div>
-    <button (click)="saveProgram()" class="btn-primary">
-      {{ editingProgram ? 'Update Program' : 'Create Program' }}
-    </button>
-    @if (editingProgram) {
-    <button (click)="cancelEdit()" class="btn-secondary" style="margin-left: 10px;">Cancel</button>
-    }
+    <button (click)="saveProgram()" class="btn-primary">{{ editingProgram ? 'Update Program' : 'Create Program' }}</button>
+    @if (editingProgram) { <button (click)="cancelEdit()" class="btn-secondary" style="margin-left: 10px;">Cancel</button> }
   </div>
   }
 
@@ -82,11 +81,7 @@
   <div class="error">{{ error }}</div>
   } @else if (filteredPrograms.length === 0) {
   <div class="no-programs">
-    @if (searchQuery) {
-    <p>No programs found matching "{{ searchQuery }}"</p>
-    } @else {
-    <p>No upcoming programs available.</p>
-    }
+    <p>No programs found.</p>
   </div>
   } @else {
   <div class="programs-list">
@@ -103,6 +98,10 @@
         <span class="badge upcoming" style="background-color: #3498db; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.8em; margin-left: 10px;">📅 Upcoming</span>
         }
       </div>
+
+      @if (program.programCategory) {
+      <span class="badge" style="background-color: #e0e0e0; color: #333; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; margin: 10px 0; display: inline-block;">🏷️ {{ getCategoryLabel(program.programCategory) }}</span>
+      }
 
       <div class="program-dates" style="margin: 10px 0; font-size: 0.9em; color: #555;">
         <p><strong>Starts:</strong> {{ formatDate(program.startDate) }}</p>
@@ -135,31 +134,19 @@
       }
 
       <div class="interactions">
-        <button
-          (click)="toggleLike('PROGRAM', program.id, program)"
-          class="like-btn"
-          [class.liked]="program.isLiked">
+        <button (click)="toggleLike('PROGRAM', program.id, program)" class="like-btn" [class.liked]="program.isLiked">
           <span class="heart">{{ program.isLiked ? '❤️' : '🤍' }}</span>
           <span class="like-count">{{ program.likeCount || 0 }}</span>
         </button>
-        <button
-          (click)="toggleComments(program.id)"
-          class="comment-btn">
-          💬 Comment
-        </button>
+        <button (click)="toggleComments(program.id)" class="comment-btn">💬 Comment</button>
       </div>
 
       @if (expandedComments.has(program.id)) {
       <div class="comments-section">
         <div class="comment-form">
-                <textarea
-                  [(ngModel)]="commentTexts[program.id]"
-                  placeholder="Write a comment..."
-                  rows="2"
-                ></textarea>
+          <textarea [(ngModel)]="commentTexts[program.id]" placeholder="Write a comment..." rows="2"></textarea>
           <button (click)="addComment('PROGRAM', program.id, program)" class="btn-comment">Post</button>
         </div>
-
         <div class="comments-list">
           @if (program.comments && program.comments.length > 0) {
           @for (comment of program.comments; track comment.id) {
@@ -174,9 +161,7 @@
             <p class="comment-content">{{ comment.content }}</p>
           </div>
           }
-          } @else {
-          <p class="no-comments">No comments yet. Be the first to comment!</p>
-          }
+          } @else { <p class="no-comments">No comments yet.</p> }
         </div>
       </div>
       }

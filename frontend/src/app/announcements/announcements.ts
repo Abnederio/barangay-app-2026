@@ -3,13 +3,15 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MyHttpClient } from '../my-http-client';
 import { Subscription } from 'rxjs';
+import { AnnouncementCategory, getCategoryLabel } from '../enums';
 
 interface Announcement {
   id: number;
   title: string;
   content: string;
   createdAt: string;
-  eventDate?: string; // <--- NEW FIELD
+  eventDate?: string;
+  category?: string; // <-- NEW
   imageUrl?: string;
   likeCount?: number;
   isLiked?: boolean;
@@ -43,13 +45,19 @@ export class Announcements implements OnInit, OnDestroy {
   isAdmin: boolean = false;
   private authSub?: Subscription;
 
+  // Categories Setup
+  categories = Object.values(AnnouncementCategory);
+  activeCategoryFilter: string = '';
+  getCategoryLabel = getCategoryLabel;
+
   showCreateForm: boolean = false;
   editingAnnouncement: Announcement | null = null;
 
   newAnnouncement = {
     title: '',
     content: '',
-    eventDate: '', // <--- NEW FIELD
+    eventDate: '',
+    category: '', // <-- NEW
     imageUrl: ''
   };
 
@@ -90,6 +98,11 @@ export class Announcements implements OnInit, OnDestroy {
     this.authSub?.unsubscribe();
   }
 
+  filterByCategory(category: string): void {
+    this.activeCategoryFilter = category;
+    this.loadAnnouncements();
+  }
+
   onSearchChange(): void {
     if (!this.searchQuery.trim()) {
       this.filteredAnnouncements = this.announcements;
@@ -104,11 +117,14 @@ export class Announcements implements OnInit, OnDestroy {
 
   loadAnnouncements(): void {
     this.isLoading = true;
-    this.http.get('/api/public/announcements').subscribe({
+    const url = this.activeCategoryFilter
+      ? `/api/public/announcements/${this.activeCategoryFilter}`
+      : `/api/public/announcements`;
+
+    this.http.get(url).subscribe({
       next: (data: unknown) => {
         try {
           const list = Array.isArray(data) ? (data as Announcement[]) : [];
-          // The backend now filters by date, but we can still sort or map here if needed
           const uniqueMap = new Map<number, Announcement>();
           list.forEach(item => {
             if (!uniqueMap.has(item.id)) {
@@ -116,7 +132,6 @@ export class Announcements implements OnInit, OnDestroy {
             }
           });
 
-          // Sort by eventDate ascending (nearest future event first)
           this.announcements = Array.from(uniqueMap.values()).sort((a, b) => {
             const dateA = a.eventDate ? new Date(a.eventDate).getTime() : new Date(a.createdAt).getTime();
             const dateB = b.eventDate ? new Date(b.eventDate).getTime() : new Date(b.createdAt).getTime();
@@ -143,15 +158,13 @@ export class Announcements implements OnInit, OnDestroy {
     });
   }
 
-  // --- Edit and Delete Logic ---
-
   startEdit(announcement: Announcement): void {
     this.editingAnnouncement = announcement;
     this.newAnnouncement = {
       title: announcement.title,
       content: announcement.content,
-      // Format the date so the input box understands it
       eventDate: announcement.eventDate ? this.formatDateForInput(announcement.eventDate) : '',
+      category: announcement.category || '',
       imageUrl: announcement.imageUrl || ''
     };
     this.imagePreview = announcement.imageUrl || null;
@@ -162,13 +175,12 @@ export class Announcements implements OnInit, OnDestroy {
   cancelEdit(): void {
     this.editingAnnouncement = null;
     this.showCreateForm = false;
-    this.newAnnouncement = { title: '', content: '', eventDate: '', imageUrl: '' }; // Reset eventDate
+    this.newAnnouncement = { title: '', content: '', eventDate: '', category: '', imageUrl: '' };
     this.selectedImageFile = null;
     this.imagePreview = null;
     this.formErrors = {};
   }
 
-  // Helper to format date for <input type="datetime-local">
   formatDateForInput(dateString: string): string {
     const date = new Date(dateString);
     const year = date.getFullYear();
@@ -196,10 +208,8 @@ export class Announcements implements OnInit, OnDestroy {
     if (!this.newAnnouncement.title || this.newAnnouncement.title.trim().length < 3) {
       this.formErrors['title'] = 'Title must be at least 3 characters';
     }
-
-    // Optional: Validate date
-    if (!this.newAnnouncement.eventDate) {
-      this.formErrors['eventDate'] = 'Event/Expiry Date is required';
+    if (!this.newAnnouncement.category) {
+      this.formErrors['category'] = 'Category is required';
     }
 
     if (Object.keys(this.formErrors).length > 0) {
@@ -247,7 +257,7 @@ export class Announcements implements OnInit, OnDestroy {
   private finishForm(): void {
     this.showCreateForm = false;
     this.editingAnnouncement = null;
-    this.newAnnouncement = { title: '', content: '', eventDate: '', imageUrl: '' };
+    this.newAnnouncement = { title: '', content: '', eventDate: '', category: '', imageUrl: '' };
     this.selectedImageFile = null;
     this.imagePreview = null;
     this.formErrors = {};
@@ -255,39 +265,22 @@ export class Announcements implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // --- Existing Logic for Likes, Comments, and Images ---
-
+  // ... (Keep existing loadLikes, loadComments, toggleLike, addComment, etc. below) ...
   loadLikes(entityType: string, entityId: number, item: any): void {
     this.http.get(`/api/likes/${entityType}/${entityId}`).subscribe({
-      next: (data: any) => {
-        item.likeCount = data.count || 0;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        item.likeCount = 0;
-        this.cdr.detectChanges();
-      }
+      next: (data: any) => { item.likeCount = data.count || 0; this.cdr.detectChanges(); },
+      error: () => { item.likeCount = 0; this.cdr.detectChanges(); }
     });
     this.http.get(`/api/likes/${entityType}/${entityId}/check`).subscribe({
-      next: (data: any) => {
-        item.isLiked = data.liked || false;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        item.isLiked = false;
-        this.cdr.detectChanges();
-      }
+      next: (data: any) => { item.isLiked = data.liked || false; this.cdr.detectChanges(); },
+      error: () => { item.isLiked = false; this.cdr.detectChanges(); }
     });
   }
 
   loadComments(entityType: string, entityId: number, item: any): void {
     this.http.get(`/api/comments/${entityType}/${entityId}`).subscribe({
-      next: (data: Comment[]) => {
-        item.comments = data || [];
-      },
-      error: () => {
-        item.comments = [];
-      }
+      next: (data: Comment[]) => { item.comments = data || []; },
+      error: () => { item.comments = []; }
     });
   }
 
@@ -298,13 +291,8 @@ export class Announcements implements OnInit, OnDestroy {
       }
       return;
     }
-    this.http.post('/api/likes', {
-      entityType: entityType,
-      entityId: entityId.toString()
-    }).subscribe({
-      next: () => {
-        this.loadLikes(entityType, entityId, item);
-      },
+    this.http.post('/api/likes', { entityType: entityType, entityId: entityId.toString() }).subscribe({
+      next: () => { this.loadLikes(entityType, entityId, item); },
       error: (err: any) => {
         if (err.status === 401 || err.status === 403) {
           if (confirm('You need to login to like. Would you like to go to the login page?')) {
@@ -330,24 +318,14 @@ export class Announcements implements OnInit, OnDestroy {
       }
       return;
     }
-
     const commentText = this.commentTexts[entityId]?.trim();
-    if (!commentText || commentText.length < 1) {
-      return;
-    }
+    if (!commentText || commentText.length < 1) return;
 
-    this.http.post('/api/comments', {
-      entityType: entityType,
-      entityId: entityId.toString(),
-      content: commentText
-    }).subscribe({
-      next: () => {
-        this.commentTexts[entityId] = '';
-        this.loadComments(entityType, entityId, item);
-      },
+    this.http.post('/api/comments', { entityType: entityType, entityId: entityId.toString(), content: commentText }).subscribe({
+      next: () => { this.commentTexts[entityId] = ''; this.loadComments(entityType, entityId, item); },
       error: (err: any) => {
         if (err.status === 409 && err.error?.error === 'PROFANITY_WARNING') {
-          alert(err.error.message); // Strict profanity block
+          alert(err.error.message);
         } else if (err.status === 401 || err.status === 403) {
           if (confirm('You need to login to comment. Would you like to go to the login page?')) {
             window.location.href = '/login';
@@ -362,12 +340,8 @@ export class Announcements implements OnInit, OnDestroy {
   deleteComment(commentId: number, entityType: string, entityId: number, item: any): void {
     if (confirm('Are you sure you want to delete this comment?')) {
       this.http.delete(`/api/comments/${commentId}`).subscribe({
-        next: () => {
-          this.loadComments(entityType, entityId, item);
-        },
-        error: (err: any) => {
-          alert(err.message || 'Failed to delete comment');
-        }
+        next: () => { this.loadComments(entityType, entityId, item); },
+        error: (err: any) => { alert(err.message || 'Failed to delete comment'); }
       });
     }
   }
@@ -375,19 +349,11 @@ export class Announcements implements OnInit, OnDestroy {
   onImageSelected(event: any): void {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        alert('Image size must be less than 10MB');
-        return;
-      }
-      if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
-        return;
-      }
+      if (file.size > 10 * 1024 * 1024) { alert('Image size must be less than 10MB'); return; }
+      if (!file.type.startsWith('image/')) { alert('Please select an image file'); return; }
       this.selectedImageFile = file;
       const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.imagePreview = e.target.result;
-      };
+      reader.onload = (e: any) => { this.imagePreview = e.target.result; };
       reader.readAsDataURL(file);
     }
   }
@@ -401,10 +367,7 @@ export class Announcements implements OnInit, OnDestroy {
         this.isUploadingImage = false;
         this.cdr.detectChanges();
       },
-      error: (err) => {
-        alert(err.message || 'Failed to upload image');
-        this.isUploadingImage = false;
-      }
+      error: (err) => { alert(err.message || 'Failed to upload image'); this.isUploadingImage = false; }
     });
   }
 
@@ -416,18 +379,9 @@ export class Announcements implements OnInit, OnDestroy {
 
   formatDate(dateString: string): string {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   }
 
-  isLoggedIn(): boolean {
-    return this.http.isLoggedIn();
-  }
-
-  getCurrentUserId(): number | undefined {
-    return this.http.getCurrentUser()?.userId;
-  }
+  isLoggedIn(): boolean { return this.http.isLoggedIn(); }
+  getCurrentUserId(): number | undefined { return this.http.getCurrentUser()?.userId; }
 }

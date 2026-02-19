@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MyHttpClient } from '../my-http-client';
 import { Subscription } from 'rxjs';
+import { ProgramCategory, getCategoryLabel } from '../enums';
 
 interface Program {
   id: number;
@@ -10,6 +11,7 @@ interface Program {
   description: string;
   startDate: string;
   endDate: string;
+  programCategory?: string; // Mapped from backend GET response
   isActive: boolean;
   imageUrl?: string;
   participants?: {
@@ -49,7 +51,11 @@ export class Programs implements OnInit, OnDestroy {
   isAdmin: boolean = false;
   private authSub?: Subscription;
 
-  // Admin form
+  // Category Filters
+  categories = Object.values(ProgramCategory);
+  activeCategoryFilter: string = '';
+  getCategoryLabel = getCategoryLabel;
+
   showCreateForm: boolean = false;
   editingProgram: Program | null = null;
   newProgram = {
@@ -57,6 +63,7 @@ export class Programs implements OnInit, OnDestroy {
     description: '',
     startDate: '',
     endDate: '',
+    category: '', // Mapped to backend POST/PUT expects
     imageUrl: ''
   };
   selectedImageFile: File | null = null;
@@ -98,6 +105,11 @@ export class Programs implements OnInit, OnDestroy {
     this.authSub?.unsubscribe();
   }
 
+  filterByCategory(category: string): void {
+    this.activeCategoryFilter = category;
+    this.loadPrograms();
+  }
+
   onSearchChange(): void {
     if (!this.searchQuery.trim()) {
       this.filteredPrograms = this.programs;
@@ -113,7 +125,12 @@ export class Programs implements OnInit, OnDestroy {
   loadPrograms(): void {
     this.isLoading = true;
     this.error = '';
-    this.http.get('/api/public/programs').subscribe({
+
+    const url = this.activeCategoryFilter
+      ? `/api/public/programs/${this.activeCategoryFilter}`
+      : `/api/public/programs`;
+
+    this.http.get(url).subscribe({
       next: (data: unknown) => {
         try {
           const list = Array.isArray(data) ? (data as Program[]) : [];
@@ -146,7 +163,6 @@ export class Programs implements OnInit, OnDestroy {
     });
   }
 
-  // --- Helper for Badges ---
   isHappeningNow(program: Program): boolean {
     const now = new Date().getTime();
     const start = new Date(program.startDate).getTime();
@@ -162,22 +178,14 @@ export class Programs implements OnInit, OnDestroy {
 
   joinProgram(programId: number): void {
     if (!this.http.isLoggedIn()) {
-      if (confirm('You need to login to join a program. Would you like to go to the login page?')) {
-        window.location.href = '/login';
-      }
+      if (confirm('You need to login to join a program. Would you like to go to the login page?')) window.location.href = '/login';
       return;
     }
-
     this.http.post(`/api/programs/${programId}/join`, {}).subscribe({
-      next: () => {
-        alert('Successfully joined the program!');
-        this.loadPrograms();
-      },
+      next: () => { alert('Successfully joined the program!'); this.loadPrograms(); },
       error: (err: any) => {
         if (err.status === 401 || err.status === 403) {
-          if (confirm('You need to login to join a program. Would you like to go to the login page?')) {
-            window.location.href = '/login';
-          }
+          if (confirm('You need to login to join. Would you like to go to the login page?')) window.location.href = '/login';
         } else {
           alert(err.error?.error || err.message || 'Failed to join program');
         }
@@ -186,83 +194,19 @@ export class Programs implements OnInit, OnDestroy {
   }
 
   leaveProgram(programId: number): void {
-    if (!this.http.isLoggedIn()) {
-      return;
-    }
-
-    if (!confirm('Are you sure you want to leave this program?')) {
-      return;
-    }
-
+    if (!this.http.isLoggedIn() || !confirm('Are you sure you want to leave this program?')) return;
     this.http.post(`/api/programs/${programId}/leave`, {}).subscribe({
-      next: () => {
-        alert('Successfully left the program!');
-        this.loadPrograms();
-      },
-      error: (err: any) => {
-        alert(err.error?.error || err.message || 'Failed to leave program');
-      }
+      next: () => { alert('Successfully left the program!'); this.loadPrograms(); },
+      error: (err: any) => alert(err.error?.error || err.message || 'Failed to leave program')
     });
   }
 
   removeParticipant(programId: number, userId: number): void {
-    if (!confirm('Are you sure you want to remove this participant?')) {
-      return;
-    }
-
+    if (!confirm('Are you sure you want to remove this participant?')) return;
     this.http.delete(`/api/admin/programs/${programId}/participants/${userId}`).subscribe({
-      next: () => {
-        alert('Participant removed successfully!');
-        this.loadPrograms();
-      },
-      error: (err: any) => {
-        alert(err.error?.error || err.message || 'Failed to remove participant');
-      }
+      next: () => { alert('Participant removed successfully!'); this.loadPrograms(); },
+      error: (err: any) => alert(err.error?.error || err.message || 'Failed to remove participant')
     });
-  }
-
-  onImageSelected(event: any): void {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        alert('Image size must be less than 10MB');
-        return;
-      }
-      if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
-        return;
-      }
-      this.selectedImageFile = file;
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.imagePreview = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  uploadImage(): void {
-    if (!this.selectedImageFile) {
-      return;
-    }
-    this.isUploadingImage = true;
-    this.http.uploadImage(this.selectedImageFile).subscribe({
-      next: (response: any) => {
-        this.newProgram.imageUrl = response.imageUrl;
-        this.isUploadingImage = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        alert(err.message || 'Failed to upload image');
-        this.isUploadingImage = false;
-      }
-    });
-  }
-
-  removeImage(): void {
-    this.selectedImageFile = null;
-    this.imagePreview = null;
-    this.newProgram.imageUrl = '';
   }
 
   startEdit(program: Program): void {
@@ -272,6 +216,7 @@ export class Programs implements OnInit, OnDestroy {
       description: program.description || '',
       startDate: this.formatDateForInput(program.startDate),
       endDate: this.formatDateForInput(program.endDate),
+      category: program.programCategory || '',
       imageUrl: program.imageUrl || ''
     };
     this.selectedImageFile = null;
@@ -283,7 +228,7 @@ export class Programs implements OnInit, OnDestroy {
   cancelEdit(): void {
     this.editingProgram = null;
     this.showCreateForm = false;
-    this.newProgram = { name: '', description: '', startDate: '', endDate: '', imageUrl: '' };
+    this.newProgram = { name: '', description: '', startDate: '', endDate: '', category: '', imageUrl: '' };
     this.selectedImageFile = null;
     this.imagePreview = null;
     this.formErrors = {};
@@ -302,19 +247,12 @@ export class Programs implements OnInit, OnDestroy {
   saveProgram(): void {
     this.formErrors = {};
 
-    if (!this.newProgram.name) {
-      this.formErrors['name'] = 'Program name is required';
-    }
-    if (!this.newProgram.startDate) {
-      this.formErrors['startDate'] = 'Start date is required';
-    }
-    if (!this.newProgram.endDate) {
-      this.formErrors['endDate'] = 'End date is required';
-    }
+    if (!this.newProgram.name) { this.formErrors['name'] = 'Program name is required'; }
+    if (!this.newProgram.startDate) { this.formErrors['startDate'] = 'Start date is required'; }
+    if (!this.newProgram.endDate) { this.formErrors['endDate'] = 'End date is required'; }
+    if (!this.newProgram.category) { this.formErrors['category'] = 'Category is required'; }
 
-    if (Object.keys(this.formErrors).length > 0) {
-      return;
-    }
+    if (Object.keys(this.formErrors).length > 0) return;
 
     if (this.selectedImageFile && !this.newProgram.imageUrl) {
       this.uploadImage();
@@ -329,7 +267,6 @@ export class Programs implements OnInit, OnDestroy {
       }, 100);
       return;
     }
-
     this.submitProgram();
   }
 
@@ -343,13 +280,9 @@ export class Programs implements OnInit, OnDestroy {
           this.cancelEdit();
           this.loadPrograms();
           this.cdr.detectChanges();
-          setTimeout(() => {
-            alert('Program updated successfully!');
-          }, 100);
+          setTimeout(() => alert('Program updated successfully!'), 100);
         },
-        error: (err) => {
-          alert(err.message || 'Failed to update program');
-        }
+        error: (err) => alert(err.message || 'Failed to update program')
       });
     } else {
       this.http.post('/api/admin/programs', this.newProgram).subscribe({
@@ -357,13 +290,9 @@ export class Programs implements OnInit, OnDestroy {
           this.cancelEdit();
           this.loadPrograms();
           this.cdr.detectChanges();
-          setTimeout(() => {
-            alert('Program created successfully!');
-          }, 100);
+          setTimeout(() => alert('Program created successfully!'), 100);
         },
-        error: (err) => {
-          alert(err.message || 'Failed to create program');
-        }
+        error: (err) => alert(err.message || 'Failed to create program')
       });
     }
   }
@@ -374,72 +303,72 @@ export class Programs implements OnInit, OnDestroy {
         next: () => {
           this.loadPrograms();
           this.cdr.detectChanges();
-          setTimeout(() => {
-            alert('Program deleted successfully!');
-          }, 100);
+          setTimeout(() => alert('Program deleted successfully!'), 100);
         },
-        error: (err) => {
-          alert(err.message || 'Failed to delete program');
-        }
+        error: (err) => alert(err.message || 'Failed to delete program')
       });
     }
   }
 
+  onImageSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) { alert('Image size must be less than 10MB'); return; }
+      if (!file.type.startsWith('image/')) { alert('Please select an image file'); return; }
+      this.selectedImageFile = file;
+      const reader = new FileReader();
+      reader.onload = (e: any) => { this.imagePreview = e.target.result; };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  uploadImage(): void {
+    if (!this.selectedImageFile) return;
+    this.isUploadingImage = true;
+    this.http.uploadImage(this.selectedImageFile).subscribe({
+      next: (response: any) => {
+        this.newProgram.imageUrl = response.imageUrl;
+        this.isUploadingImage = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => { alert(err.message || 'Failed to upload image'); this.isUploadingImage = false; }
+    });
+  }
+
+  removeImage(): void {
+    this.selectedImageFile = null;
+    this.imagePreview = null;
+    this.newProgram.imageUrl = '';
+  }
+
   loadLikes(entityType: string, entityId: number, item: any): void {
     this.http.get(`/api/likes/${entityType}/${entityId}`).subscribe({
-      next: (data: any) => {
-        item.likeCount = data.count || 0;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        item.likeCount = 0;
-        this.cdr.detectChanges();
-      }
+      next: (data: any) => { item.likeCount = data.count || 0; this.cdr.detectChanges(); },
+      error: () => { item.likeCount = 0; this.cdr.detectChanges(); }
     });
-
     this.http.get(`/api/likes/${entityType}/${entityId}/check`).subscribe({
-      next: (data: any) => {
-        item.isLiked = data.liked || false;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        item.isLiked = false;
-        this.cdr.detectChanges();
-      }
+      next: (data: any) => { item.isLiked = data.liked || false; this.cdr.detectChanges(); },
+      error: () => { item.isLiked = false; this.cdr.detectChanges(); }
     });
   }
 
   loadComments(entityType: string, entityId: number, item: any): void {
     this.http.get(`/api/comments/${entityType}/${entityId}`).subscribe({
-      next: (data: Comment[]) => {
-        item.comments = data || [];
-      },
-      error: () => {
-        item.comments = [];
-      }
+      next: (data: Comment[]) => { item.comments = data || []; },
+      error: () => { item.comments = []; }
     });
   }
 
   toggleLike(entityType: string, entityId: number, item: any): void {
     if (!this.http.isLoggedIn()) {
-      if (confirm('You need to login to like. Would you like to go to the login page?')) {
-        window.location.href = '/login';
-      }
+      if (confirm('You need to login to like. Would you like to go to the login page?')) window.location.href = '/login';
       return;
     }
-
-    this.http.post('/api/likes', {
-      entityType: entityType,
-      entityId: entityId.toString()
-    }).subscribe({
-      next: () => {
-        this.loadLikes(entityType, entityId, item);
-      },
+    this.http.post('/api/likes', { entityType: entityType, entityId: entityId.toString() }).subscribe({
+      next: () => { this.loadLikes(entityType, entityId, item); },
       error: (err: any) => {
         if (err.status === 401 || err.status === 403) {
-          if (confirm('You need to login to like. Would you like to go to the login page?')) {
-            window.location.href = '/login';
-          }
+          if (confirm('You need to login to like. Would you like to go to the login page?')) window.location.href = '/login';
         }
       }
     });
@@ -455,36 +384,23 @@ export class Programs implements OnInit, OnDestroy {
 
   addComment(entityType: string, entityId: number, item: any): void {
     if (!this.http.isLoggedIn()) {
-      if (confirm('You need to login to comment. Would you like to go to the login page?')) {
-        window.location.href = '/login';
-      }
+      if (confirm('You need to login to comment. Would you like to go to the login page?')) window.location.href = '/login';
       return;
     }
 
     const commentText = this.commentTexts[entityId]?.trim();
-    if (!commentText || commentText.length < 1) {
-      return;
-    }
+    if (!commentText || commentText.length < 1) return;
 
-    this.http.post('/api/comments', {
-      entityType: entityType,
-      entityId: entityId.toString(),
-      content: commentText
-    }).subscribe({
+    this.http.post('/api/comments', { entityType: entityType, entityId: entityId.toString(), content: commentText }).subscribe({
       next: () => {
         this.commentTexts[entityId] = '';
         this.loadComments(entityType, entityId, item);
       },
       error: (err: any) => {
-        // --- STRICT PROFANITY BLOCK ---
         if (err.status === 409 && err.error?.error === 'PROFANITY_WARNING') {
-          alert(err.error.message); // Show message only. No retry logic.
-        }
-        // -----------------------------
-        else if (err.status === 401 || err.status === 403) {
-          if (confirm('You need to login to comment. Would you like to go to the login page?')) {
-            window.location.href = '/login';
-          }
+          alert(err.error.message);
+        } else if (err.status === 401 || err.status === 403) {
+          if (confirm('You need to login to comment. Would you like to go to the login page?')) window.location.href = '/login';
         } else {
           alert(err.message || 'Failed to add comment');
         }
@@ -495,12 +411,8 @@ export class Programs implements OnInit, OnDestroy {
   deleteComment(commentId: number, entityType: string, entityId: number, item: any): void {
     if (confirm('Are you sure you want to delete this comment?')) {
       this.http.delete(`/api/comments/${commentId}`).subscribe({
-        next: () => {
-          this.loadComments(entityType, entityId, item);
-        },
-        error: (err: any) => {
-          alert(err.message || 'Failed to delete comment');
-        }
+        next: () => { this.loadComments(entityType, entityId, item); },
+        error: (err: any) => alert(err.message || 'Failed to delete comment')
       });
     }
   }
@@ -508,19 +420,10 @@ export class Programs implements OnInit, OnDestroy {
   formatDate(dateString: string): string {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
   }
 
-  isLoggedIn(): boolean {
-    return this.http.isLoggedIn();
-  }
-
-  getCurrentUserId(): number | undefined {
-    return this.http.getCurrentUser()?.userId;
-  }
+  isLoggedIn(): boolean { return this.http.isLoggedIn(); }
+  getCurrentUserId(): number | undefined { return this.http.getCurrentUser()?.userId; }
 }

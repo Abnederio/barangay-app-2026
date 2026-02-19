@@ -9,13 +9,18 @@
   </div>
 
   <div class="search-bar">
-    <input
-      type="text"
-      [(ngModel)]="searchQuery"
-      (input)="onSearchChange()"
-      placeholder="🔍 Search announcements..."
-      class="search-input"
-    />
+    <input type="text" [(ngModel)]="searchQuery" (input)="onSearchChange()" placeholder="🔍 Search announcements..." class="search-input" />
+  </div>
+
+  <div class="category-filters" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+    <button (click)="filterByCategory('')" [ngStyle]="{'background-color': activeCategoryFilter === '' ? '#007bff' : '#f1f3f4', 'color': activeCategoryFilter === '' ? 'white' : '#333', 'border': 'none', 'padding': '8px 16px', 'border-radius': '20px', 'cursor': 'pointer'}">
+      All
+    </button>
+    @for (cat of categories; track cat) {
+    <button (click)="filterByCategory(cat)" [ngStyle]="{'background-color': activeCategoryFilter === cat ? '#007bff' : '#f1f3f4', 'color': activeCategoryFilter === cat ? 'white' : '#333', 'border': 'none', 'padding': '8px 16px', 'border-radius': '20px', 'cursor': 'pointer'}">
+      {{ getCategoryLabel(cat) }}
+    </button>
+    }
   </div>
 
   @if (showCreateForm && isAdmin) {
@@ -24,26 +29,32 @@
     <div class="form-group">
       <label>Title *</label>
       <input type="text" [(ngModel)]="newAnnouncement.title" [class.error]="formErrors['title']" />
-      @if (formErrors['title']) {
-      <span class="error-text">{{ formErrors['title'] }}</span>
-      }
+      @if (formErrors['title']) { <span class="error-text">{{ formErrors['title'] }}</span> }
     </div>
 
     <div class="form-group">
-      <label>Event / Expiry Date *</label>
+      <label>Category *</label>
+      <select [(ngModel)]="newAnnouncement.category" [class.error]="formErrors['category']" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc;">
+        <option value="">Select Category</option>
+        @for (cat of categories; track cat) {
+        <option [value]="cat">{{ getCategoryLabel(cat) }}</option>
+        }
+      </select>
+      @if (formErrors['category']) { <span class="error-text">{{ formErrors['category'] }}</span> }
+    </div>
+
+    <div class="form-group">
+      <label>Event / Expiry Date</label>
       <input type="datetime-local" [(ngModel)]="newAnnouncement.eventDate" [class.error]="formErrors['eventDate']" />
       <small style="color: #666; font-size: 0.85em;">Announcements will be hidden after this date.</small>
-      @if (formErrors['eventDate']) {
-      <span class="error-text">{{ formErrors['eventDate'] }}</span>
-      }
     </div>
+
     <div class="form-group">
       <label>Content *</label>
       <textarea [(ngModel)]="newAnnouncement.content" rows="6" [class.error]="formErrors['content']"></textarea>
-      @if (formErrors['content']) {
-      <span class="error-text">{{ formErrors['content'] }}</span>
-      }
+      @if (formErrors['content']) { <span class="error-text">{{ formErrors['content'] }}</span> }
     </div>
+
     <div class="form-group">
       <label>Image (Optional)</label>
       <input type="file" accept="image/*" (change)="onImageSelected($event)" />
@@ -51,26 +62,14 @@
       <div class="image-preview">
         <img [src]="imagePreview" alt="Preview" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
         @if (!newAnnouncement.imageUrl) {
-        <button type="button" (click)="uploadImage()" [disabled]="isUploadingImage" class="btn-secondary" style="margin-top: 5px;">
-          {{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}
-        </button>
+        <button type="button" (click)="uploadImage()" [disabled]="isUploadingImage" class="btn-secondary" style="margin-top: 5px;">{{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}</button>
         }
         <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px; margin-left: 5px;">Remove</button>
       </div>
       }
-      @if (newAnnouncement.imageUrl && !imagePreview) {
-      <div class="image-preview">
-        <img [src]="newAnnouncement.imageUrl" alt="Current image" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
-        <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px;">Remove</button>
-      </div>
-      }
     </div>
-    <button (click)="saveAnnouncement()" class="btn-primary">
-      {{ editingAnnouncement ? 'Update Announcement' : 'Create Announcement' }}
-    </button>
-    @if (editingAnnouncement) {
-    <button (click)="cancelEdit()" class="btn-secondary" style="margin-left: 10px;">Cancel</button>
-    }
+    <button (click)="saveAnnouncement()" class="btn-primary">{{ editingAnnouncement ? 'Update Announcement' : 'Create Announcement' }}</button>
+    @if (editingAnnouncement) { <button (click)="cancelEdit()" class="btn-secondary" style="margin-left: 10px;">Cancel</button> }
   </div>
   }
 
@@ -80,11 +79,7 @@
   <div class="error">{{ error }}</div>
   } @else if (filteredAnnouncements.length === 0) {
   <div class="no-announcements">
-    @if (searchQuery) {
-    <p>No announcements found matching "{{ searchQuery }}"</p>
-    } @else {
-    <p>No upcoming announcements available.</p>
-    }
+    <p>No announcements found.</p>
   </div>
   } @else {
   <div class="announcements-list">
@@ -94,6 +89,10 @@
       <img [src]="announcement.imageUrl" alt="{{ announcement.title }}" class="announcement-image" />
       }
       <h3>{{ announcement.title }}</h3>
+
+      @if (announcement.category) {
+      <span class="badge" style="background-color: #e0e0e0; color: #333; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; margin-bottom: 10px; display: inline-block;">🏷️ {{ getCategoryLabel(announcement.category) }}</span>
+      }
 
       <p class="date">
         @if (announcement.eventDate) {
@@ -106,31 +105,19 @@
       <p class="content">{{ announcement.content }}</p>
 
       <div class="interactions">
-        <button
-          (click)="toggleLike('ANNOUNCEMENT', announcement.id, announcement)"
-          class="like-btn"
-          [class.liked]="announcement.isLiked">
+        <button (click)="toggleLike('ANNOUNCEMENT', announcement.id, announcement)" class="like-btn" [class.liked]="announcement.isLiked">
           <span class="heart">{{ announcement.isLiked ? '❤️' : '🤍' }}</span>
           <span class="like-count">{{ announcement.likeCount || 0 }}</span>
         </button>
-        <button
-          (click)="toggleComments(announcement.id)"
-          class="comment-btn">
-          💬 Comment
-        </button>
+        <button (click)="toggleComments(announcement.id)" class="comment-btn">💬 Comment</button>
       </div>
 
       @if (expandedComments.has(announcement.id)) {
       <div class="comments-section">
         <div class="comment-form">
-                <textarea
-                  [(ngModel)]="commentTexts[announcement.id]"
-                  placeholder="Write a comment..."
-                  rows="2"
-                ></textarea>
+          <textarea [(ngModel)]="commentTexts[announcement.id]" placeholder="Write a comment..." rows="2"></textarea>
           <button (click)="addComment('ANNOUNCEMENT', announcement.id, announcement)" class="btn-comment">Post</button>
         </div>
-
         <div class="comments-list">
           @if (announcement.comments && announcement.comments.length > 0) {
           @for (comment of announcement.comments; track comment.id) {
@@ -146,7 +133,7 @@
           </div>
           }
           } @else {
-          <p class="no-comments">No comments yet. Be the first to comment!</p>
+          <p class="no-comments">No comments yet.</p>
           }
         </div>
       </div>
