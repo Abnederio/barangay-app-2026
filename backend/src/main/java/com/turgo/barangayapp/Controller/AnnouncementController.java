@@ -30,6 +30,11 @@ public class AnnouncementController {
         return ResponseEntity.ok(announcementService.getAllAnnouncements());
     }
 
+    @GetMapping("/public/announcements/{category}")
+    public ResponseEntity<List<Announcement>> getAnnouncementBasedCategory(@PathVariable String category){
+        return ResponseEntity.ok(announcementService.getAnnouncementsByCategory(category));
+    }
+
     // CREATE
     @PostMapping("/admin/announcements")
     public ResponseEntity<?> createAnnouncement(@Valid @RequestBody Map<String, String> request, Authentication authentication) {

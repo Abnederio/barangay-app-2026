@@ -1,7 +1,9 @@
 package com.turgo.barangayapp.Controller;
 
+import com.turgo.barangayapp.Model.Event;
 import com.turgo.barangayapp.Model.Program;
 import com.turgo.barangayapp.Model.User;
+import com.turgo.barangayapp.Repository.ProgramRepository;
 import com.turgo.barangayapp.Service.ProgramService; // Import Service
 import com.turgo.barangayapp.Service.UserServices;
 import jakarta.validation.Valid;
@@ -24,11 +26,19 @@ public class ProgramController {
 
     @Autowired
     private UserServices userServices;
+    @Autowired
+    private ProgramRepository programRepository;
 
     // --- PUBLIC ---
     @GetMapping("/public/programs")
     public ResponseEntity<List<Program>> getPrograms() {
         return ResponseEntity.ok(programService.getAllActivePrograms());
+    }
+
+    //Based on Program Category
+    @GetMapping("/public/programs/{category}")
+    public ResponseEntity<List<Program>> getProgramByCategory(@PathVariable String category){
+        return ResponseEntity.ok(programService.getProgramByCategory(category));
     }
 
     // --- PARTICIPANT ACTIONS ---

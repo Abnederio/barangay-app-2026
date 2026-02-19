@@ -1,9 +1,13 @@
 package com.turgo.barangayapp.Service;
 
+import com.turgo.barangayapp.Model.Announcement;
 import com.turgo.barangayapp.Model.Program;
 import com.turgo.barangayapp.Model.User;
 import com.turgo.barangayapp.Repository.ProgramRepository;
 import com.turgo.barangayapp.Service.UserServices; // Needed for removing participants
+import com.turgo.barangayapp.enums.AnnouncementCategory;
+import com.turgo.barangayapp.enums.EventCategory;
+import com.turgo.barangayapp.enums.ProgramCategory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,9 +31,14 @@ public class ProgramService {
         return programRepository.findByEndDateAfterOrderByStartDateAsc(LocalDateTime.now());
     }
 
+    public List<Program> getProgramByCategory(String category){
+        return programRepository.findByProgramCategory(ProgramCategory.valueOf(category.toUpperCase()));
+    }
+
     public Optional<Program> getProgramById(Long id) {
         return programRepository.findById(id);
     }
+
 
     // --- CREATE ---
     public Program createProgram(Map<String, String> request) {
@@ -38,6 +47,7 @@ public class ProgramService {
         program.setDescription(request.get("description"));
         program.setStartDate(LocalDateTime.parse(request.get("startDate"), DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         program.setEndDate(LocalDateTime.parse(request.get("endDate"), DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        program.setProgramCategory(ProgramCategory.valueOf(request.get("category").toUpperCase()));
         program.setActive(true);
 
         if (request.containsKey("imageUrl")) {
@@ -55,6 +65,10 @@ public class ProgramService {
             if (request.containsKey("endDate")) program.setEndDate(LocalDateTime.parse(request.get("endDate"), DateTimeFormatter.ISO_LOCAL_DATE_TIME));
             if (request.containsKey("isActive")) program.setActive(Boolean.parseBoolean(request.get("isActive")));
             if (request.containsKey("imageUrl")) program.setImageUrl(request.get("imageUrl"));
+
+            if (request.containsKey("category") && !request.get("category").isEmpty()) {
+                program.setProgramCategory(ProgramCategory.valueOf(request.get("category").toUpperCase()));
+            }
 
             return programRepository.save(program);
         });

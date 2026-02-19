@@ -1,5 +1,6 @@
 package com.turgo.barangayapp.Model;
 
+import com.turgo.barangayapp.enums.ProgramCategory;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -14,6 +15,10 @@ public class Program {
     
     @Column(nullable = false)
     private String name;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ProgramCategory programCategory;
     
     @Column(columnDefinition = "TEXT")
     private String description;
@@ -114,5 +119,14 @@ public class Program {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+
+    public ProgramCategory getProgramCategory() {
+        return programCategory;
+    }
+
+    public void setProgramCategory(ProgramCategory programCategory) {
+        this.programCategory = programCategory;
     }
 }

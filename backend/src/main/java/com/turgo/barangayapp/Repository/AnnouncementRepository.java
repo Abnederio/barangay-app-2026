@@ -1,6 +1,7 @@
 package com.turgo.barangayapp.Repository;
 
 import com.turgo.barangayapp.Model.Announcement;
+import com.turgo.barangayapp.enums.AnnouncementCategory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,4 +12,5 @@ import java.util.List;
 public interface AnnouncementRepository extends JpaRepository<Announcement, Long> {
 
     List<Announcement> findByEventDateAfterOrderByEventDateAsc(LocalDateTime now);
+    List<Announcement> findByCategory(AnnouncementCategory category);
 }

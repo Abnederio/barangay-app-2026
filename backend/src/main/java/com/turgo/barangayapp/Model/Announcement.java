@@ -1,7 +1,9 @@
 package com.turgo.barangayapp.Model;
 
+import com.turgo.barangayapp.enums.AnnouncementCategory;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 @Entity
 @Table(name = "announcements")
@@ -21,6 +23,9 @@ public class Announcement {
 
     @Column(name = "event_date")
     private LocalDateTime eventDate;
+
+    @Enumerated(EnumType.STRING)
+    private AnnouncementCategory category;
     
     private String imageUrl;
     
@@ -85,5 +90,13 @@ public class Announcement {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public AnnouncementCategory getCategory() {
+        return category;
+    }
+
+    public void setCategory(AnnouncementCategory category) {
+        this.category = category;
     }
 }

@@ -3,6 +3,7 @@ package com.turgo.barangayapp.Service;
 import com.turgo.barangayapp.Model.Announcement;
 import com.turgo.barangayapp.Model.User;
 import com.turgo.barangayapp.Repository.AnnouncementRepository;
+import com.turgo.barangayapp.enums.AnnouncementCategory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,10 @@ public class AnnouncementService {
     public List<Announcement> getAllAnnouncements() {
         return announcementRepository.findByEventDateAfterOrderByEventDateAsc(LocalDateTime.now());
     }
+    //Based on Announcement Category
+    public List<Announcement> getAnnouncementsByCategory(String category){
+        return announcementRepository.findByCategory(AnnouncementCategory.valueOf(category.toUpperCase()));
+    }
 
     // Create (Admin)
     public Announcement createAnnouncement(Map<String, String> request, User admin) {
@@ -30,6 +35,10 @@ public class AnnouncementService {
 
         if (request.containsKey("eventDate") && !request.get("eventDate").isEmpty()) {
             announcement.setEventDate(LocalDateTime.parse(request.get("eventDate")));
+        }
+
+        if (request.containsKey("category") && !request.get("category").isEmpty()) {
+            announcement.setCategory(AnnouncementCategory.valueOf(request.get("category").toUpperCase()));
         }
 
         if (request.containsKey("imageUrl")) {
@@ -49,9 +58,14 @@ public class AnnouncementService {
                 announcement.setImageUrl(request.get("imageUrl"));
             }
 
+            if (request.containsKey("category") && !request.get("category").isEmpty()) {
+                announcement.setCategory(AnnouncementCategory.valueOf(request.get("category").toUpperCase()));
+            }
+
             return announcementRepository.save(announcement);
         });
     }
+
 
     // Delete (Admin)
     public boolean deleteAnnouncement(Long id) {

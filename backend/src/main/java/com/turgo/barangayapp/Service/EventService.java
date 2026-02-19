@@ -1,8 +1,11 @@
 package com.turgo.barangayapp.Service;
 
+import com.turgo.barangayapp.Model.Announcement;
 import com.turgo.barangayapp.Model.Event;
 import com.turgo.barangayapp.Model.User;
 import com.turgo.barangayapp.Repository.EventRepository;
+import com.turgo.barangayapp.enums.AnnouncementCategory;
+import com.turgo.barangayapp.enums.EventCategory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +26,11 @@ public class EventService {
         return eventRepository.findByEventDateAfterOrderByEventDateAsc(LocalDateTime.now());
     }
 
+    //Based on Event Category
+    public List<Event> getEventsByCategory(String category){
+        return eventRepository.findByEventCategory(EventCategory.valueOf(category.toUpperCase()));
+    }
+
     public Optional<Event> getEventById(Long id) {
         return eventRepository.findById(id);
     }
@@ -37,6 +45,10 @@ public class EventService {
         // Parse Date
         if (request.containsKey("eventDate")) {
             event.setEventDate(LocalDateTime.parse(request.get("eventDate"), DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        }
+
+        if (request.containsKey("category") && !request.get("category").isEmpty()) {
+            event.setEventCategory(EventCategory.valueOf(request.get("category").toUpperCase()));
         }
 
         if (request.containsKey("imageUrl")) {
@@ -58,6 +70,10 @@ public class EventService {
 
             if (request.containsKey("eventDate")) {
                 event.setEventDate(LocalDateTime.parse(request.get("eventDate"), DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            }
+
+            if (request.containsKey("category") && !request.get("category").isEmpty()) {
+                event.setEventCategory(EventCategory.valueOf(request.get("category").toUpperCase()));
             }
 
             if (request.containsKey("imageUrl")) {

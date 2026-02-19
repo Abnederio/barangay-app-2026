@@ -1,5 +1,6 @@
 package com.turgo.barangayapp.Model;
 
+import com.turgo.barangayapp.enums.EventCategory;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -22,6 +23,9 @@ public class Event {
     private String location;
     
     private String imageUrl;
+
+    @Enumerated(EnumType.STRING)
+    private EventCategory eventCategory;
     
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -95,5 +99,14 @@ public class Event {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+
+    public EventCategory getEventCategory() {
+        return eventCategory;
+    }
+
+    public void setEventCategory(EventCategory eventCategory) {
+        this.eventCategory = eventCategory;
     }
 }

@@ -1,5 +1,6 @@
 package com.turgo.barangayapp.Controller;
 
+import com.turgo.barangayapp.Model.Announcement;
 import com.turgo.barangayapp.Model.Event;
 import com.turgo.barangayapp.Model.User;
 import com.turgo.barangayapp.Service.EventService; // Import Service
@@ -28,6 +29,11 @@ public class EventController {
     @GetMapping("/public/events")
     public ResponseEntity<List<Event>> getUpcomingEvents() {
         return ResponseEntity.ok(eventService.getUpcomingEvents());
+    }
+
+    @GetMapping("/public/events/{category}")
+    public ResponseEntity<List<Event>> getEventByCategory(@PathVariable String category){
+        return ResponseEntity.ok(eventService.getEventsByCategory(category));
     }
 
     // CREATE
