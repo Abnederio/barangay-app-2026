@@ -401,18 +401,3 @@ textarea {
   color: #666;
   font-size: 1.1rem;
 }
-
-/* Application Statuses */
-.status-badge { display: inline-block; padding: 5px 12px; border-radius: 12px; font-size: 0.85em; font-weight: bold; text-transform: uppercase; }
-.status-approved { background-color: #e6f4ea; color: #1e8e3e; }
-.status-rejected { background-color: #fce8e6; color: #d93025; }
-.status-pending { background-color: #fef7e0; color: #fbbc04; }
-
-/* Service Lifecycle Statuses */
-.badge { display: inline-block; padding: 5px 10px; border-radius: 4px; font-size: 0.75em; font-weight: bold; text-transform: uppercase; }
-.badge-upcoming { background-color: #e8f0fe; color: #1a73e8; border: 1px solid #1a73e8; }
-.badge-ongoing { background-color: #e6f4ea; color: #1e8e3e; border: 1px solid #1e8e3e; }
-.badge-finished { background-color: #f1f3f4; color: #5f6368; border: 1px solid #5f6368; }
-.badge-cancelled { background-color: #fce8e6; color: #d93025; border: 1px solid #d93025; }
-
-button:disabled { opacity: 0.6; cursor: not-allowed !important; }

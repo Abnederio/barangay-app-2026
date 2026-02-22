@@ -2,172 +2,228 @@
   <div class="header">
     <h1>🏛️ Barangay Services</h1>
     @if (isAdmin) {
-    <button (click)="showServiceForm = !showServiceForm; editingService = null" class="btn-primary">
-      {{ showServiceForm ? 'Cancel' : '+ Manage Services' }}
-    </button>
+      <button (click)="showServiceForm = !showServiceForm; editingService = null" class="btn-primary">
+        {{ showServiceForm ? 'Cancel' : '+ Manage Services' }}
+      </button>
     }
   </div>
 
   <div class="search-bar">
-    <input type="text" [(ngModel)]="searchQuery" (input)="onSearchChange()" placeholder="🔍 Search services..." class="search-input" />
+    <input
+      type="text"
+      [(ngModel)]="searchQuery"
+      (input)="onSearchChange()"
+      placeholder="🔍 Search services..."
+      class="search-input"
+    />
   </div>
 
   @if (showServiceForm && isAdmin) {
-  <div class="service-management-form" style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
-    <h2>{{ editingService ? 'Edit Service' : 'Add New Service' }}</h2>
-    <div class="form-group">
-      <label>Service Name *</label>
-      <input type="text" [(ngModel)]="newService.name" [class.error]="formErrors['name']" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;" />
-      @if (formErrors['name']) { <span class="error-text" style="color: #d93025;">{{ formErrors['name'] }}</span> }
-    </div>
-
-    <div class="form-group" style="margin-top: 15px;">
-      <label>Service Status</label>
-      <select [(ngModel)]="newService.serviceStatus" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
-        <option value="UPCOMING">Upcoming</option>
-        <option value="ONGOING">On-going</option>
-        <option value="FINISHED">Finished</option>
-        <option value="CANCELLED">Cancelled</option>
-      </select>
-    </div>
-
-    <div class="form-group" style="margin-top: 15px;">
-      <label>Description</label>
-      <textarea [(ngModel)]="newService.description" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;"></textarea>
-    </div>
-    <div class="form-group" style="margin-top: 15px;">
-      <label>Image (Optional)</label>
-      <input type="file" accept="image/*" (change)="onImageSelected($event)" />
-      @if (imagePreview) {
-      <div class="image-preview">
-        <img [src]="imagePreview" alt="Preview" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
-        @if (!newService.imageUrl) {
-        <button type="button" (click)="uploadImage()" [disabled]="isUploadingImage" class="btn-secondary" style="margin-top: 5px;">{{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}</button>
+    <div class="service-management-form">
+      <h2>{{ editingService ? 'Edit Service' : 'Add New Service' }}</h2>
+      <div class="form-group">
+        <label>Service Name *</label>
+        <input type="text" [(ngModel)]="newService.name" [class.error]="formErrors['name']" />
+        @if (formErrors['name']) {
+          <span class="error-text">{{ formErrors['name'] }}</span>
         }
-        <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px; margin-left: 5px;">Remove</button>
       </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea [(ngModel)]="newService.description" rows="4"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Image (Optional)</label>
+        <input type="file" accept="image/*" (change)="onImageSelected($event)" />
+        @if (imagePreview) {
+          <div class="image-preview">
+            <img [src]="imagePreview" alt="Preview" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
+            @if (!newService.imageUrl) {
+              <button type="button" (click)="uploadImage()" [disabled]="isUploadingImage" class="btn-secondary" style="margin-top: 5px;">
+                {{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}
+              </button>
+            }
+            <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px; margin-left: 5px;">Remove</button>
+          </div>
+        }
+        @if (newService.imageUrl && !imagePreview) {
+          <div class="image-preview">
+            <img [src]="newService.imageUrl" alt="Current image" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
+            <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px;">Remove</button>
+          </div>
+        }
+      </div>
+      <button (click)="saveService()" class="btn-primary">{{ editingService ? 'Update Service' : 'Create Service' }}</button>
+      @if (editingService) {
+        <button (click)="cancelServiceEdit()" class="btn-secondary">Cancel</button>
       }
     </div>
-    <div style="margin-top: 20px;">
-      <button (click)="saveService()" class="btn-primary" style="padding: 10px 20px; background: #4285F4; color: white; border: none; border-radius: 4px; cursor: pointer;">{{ editingService ? 'Update Service' : 'Create Service' }}</button>
-      @if (editingService) { <button (click)="cancelServiceEdit()" class="btn-secondary" style="margin-left: 10px; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Cancel</button> }
-    </div>
-  </div>
   }
 
   @if (showApplicationForm) {
-  <div class="application-form" style="background: #f8f9fa; border-left: 4px solid #4285F4; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
-    <h2>📝 Application Form: {{ selectedService }}</h2>
-    <p style="color: #555; margin-bottom: 15px;">Please fill out the details below. An admin will review your application and you will be notified in your "My Applications" tab.</p>
-    @if (formErrors['general']) { <div class="error-message" style="color: #d93025; margin-bottom: 10px;">{{ formErrors['general'] }}</div> }
-    <form (ngSubmit)="submitApplication()">
-      <div class="form-group">
-        <label>Supporting Information / Requirements:</label>
-        <textarea [(ngModel)]="additionalInfo" name="additionalInfo" rows="4" placeholder="E.g., Proof of residency, contact number, or specific requests..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;"></textarea>
-      </div>
-      <div class="form-actions" style="margin-top: 15px;">
-        <button type="submit" class="btn-primary" style="padding: 10px 20px; background: #34a853; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Submit Application</button>
-        <button type="button" (click)="showApplicationForm = false" class="btn-secondary" style="margin-left: 10px; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
-      </div>
-    </form>
-  </div>
+    <div class="application-form">
+      <h2>Apply for {{ selectedService }}</h2>
+      @if (successMessage) {
+        <div class="success-message">{{ successMessage }}</div>
+      }
+      @if (formErrors['general']) {
+        <div class="error-message">{{ formErrors['general'] }}</div>
+      }
+      <form (ngSubmit)="submitApplication()">
+        <div class="form-group">
+          <label>Additional Information</label>
+          <textarea
+            [(ngModel)]="additionalInfo"
+            name="additionalInfo"
+            rows="6"
+            placeholder="Please provide any additional information or requirements..."
+          ></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Submit Application</button>
+          <button type="button" (click)="showApplicationForm = false" class="btn-secondary">Cancel</button>
+        </div>
+      </form>
+    </div>
   }
 
-  <div class="services-section">
-    <h2>Available Services</h2>
-    @if (isLoading) {
-    <div class="loading">Loading services...</div>
-    } @else if (filteredServices.length === 0) {
-    <div class="no-services">No services found.</div>
-    } @else {
-    <div class="services-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
-      @for (service of filteredServices; track service.id) {
-      <div class="service-card" style="background: white; border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-        @if (service.imageUrl) {
-        <img [src]="service.imageUrl" alt="{{ service.name }}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;" />
-        }
-
-        <div style="margin-bottom: 10px;">
-          <span [class]="'badge ' + getStatusClass(service.serviceStatus)">{{ service.serviceStatus }}</span>
-        </div>
-
-        <h3 style="margin-top: 0; color: #2c3e50;">{{ service.name }}</h3>
-        <p class="service-description" style="color: #666; font-size: 0.9em; line-height: 1.5;">{{ service.description }}</p>
-
-        @if (isAdmin) {
-        <div class="service-actions" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
-          <button (click)="startEditService(service)" class="btn-edit" style="background: #fbbc04; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Edit</button>
-          <button (click)="deleteService(service.id)" class="btn-delete" style="background: #d93025; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Delete</button>
-        </div>
-        } @else {
-        <div style="margin-top: 15px;">
-          @if (hasApplied(service)) {
-          <button disabled style="background: #e0e0e0; color: #666; padding: 10px 20px; border: none; border-radius: 4px; cursor: not-allowed; width: 100%;">Application Pending/Approved</button>
-          } @else if (service.serviceStatus === 'CANCELLED' || service.serviceStatus === 'FINISHED') {
-          <button disabled style="background: #e0e0e0; color: #666; padding: 10px 20px; border: none; border-radius: 4px; cursor: not-allowed; width: 100%;">Service Closed</button>
+  @if (isAdmin) {
+    <div class="services-section">
+      <h2>Manage Services</h2>
+      @if (isLoading) {
+        <div class="loading">Loading services...</div>
+      } @else if (error) {
+        <div class="error">{{ error }}</div>
+      } @else if (filteredServices.length === 0) {
+        <div class="no-services">
+          @if (searchQuery) {
+            <p>No services found matching "{{ searchQuery }}"</p>
           } @else {
-          <button (click)="openApplicationForm(service)" class="btn-primary" style="background: #4285F4; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold;">Apply for Service</button>
+            <p>No services available. Create one to get started.</p>
           }
         </div>
-        }
-      </div>
+      } @else {
+        <div class="services-list">
+          @for (service of filteredServices; track service.id) {
+            <div class="service-card">
+              @if (service.imageUrl) {
+                <img [src]="service.imageUrl" alt="{{ service.name }}" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;" />
+              }
+              <h3>{{ service.name }}</h3>
+              @if (service.description) {
+                <p class="service-description">{{ service.description }}</p>
+              }
+              @if (service.participants && service.participants.length > 0) {
+                <div class="participants-section">
+                  <h4>Participants ({{ service.participants.length }})</h4>
+                  <ul class="participants-list">
+                    @for (participant of service.participants; track participant.id) {
+                      <li>
+                        {{ participant.fullName }} ({{ participant.email }})
+                        <button (click)="removeParticipant(service.id, participant.id)" class="btn-remove" style="margin-left: 10px; padding: 2px 8px; font-size: 12px;">Remove</button>
+                      </li>
+                    }
+                  </ul>
+                </div>
+              } @else {
+                <div class="participants-section">
+                  <p class="no-participants">No participants yet.</p>
+                </div>
+              }
+              <div class="service-actions">
+                <button (click)="startEditService(service)" class="btn-edit">Edit</button>
+                <button (click)="deleteService(service.id)" class="btn-delete">Delete</button>
+              </div>
+            </div>
+          }
+        </div>
       }
     </div>
-    }
-  </div>
-
-  <hr style="margin: 40px 0; border: 0; border-top: 2px solid #eee;" />
+  } @else {
+    <div class="services-section">
+      <h2>Available Services</h2>
+      @if (isLoading) {
+        <div class="loading">Loading services...</div>
+      } @else if (error) {
+        <div class="error">{{ error }}</div>
+      } @else if (filteredServices.length === 0) {
+        <div class="no-services">
+          @if (searchQuery) {
+            <p>No services found matching "{{ searchQuery }}"</p>
+          } @else {
+            <p>No services available at this time.</p>
+          }
+        </div>
+      } @else {
+        <div class="services-list">
+          @for (service of filteredServices; track service.id) {
+            <div class="service-card">
+              @if (service.imageUrl) {
+                <img [src]="service.imageUrl" alt="{{ service.name }}" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;" />
+              }
+              <h3>{{ service.name }}</h3>
+              @if (service.description) {
+                <p class="service-description">{{ service.description }}</p>
+              }
+              @if (isParticipant(service)) {
+                <button (click)="leaveService(service.id)" class="btn-secondary">Leave Service</button>
+              } @else {
+                <button (click)="joinService(service.id)" class="btn-secondary">Join Service</button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
 
   @if (isAdmin) {
-  <div class="applications-section">
-    <h2>All Service Applications (Admin Review)</h2>
-    @if (allApplications.length === 0) {
-    <div class="no-applications">No applications submitted yet.</div>
-    } @else {
-    <div class="applications-list" style="display: flex; flex-direction: column; gap: 15px;">
-      @for (app of allApplications; track app.id) {
-      <div class="application-card" style="background: white; border: 1px solid #ddd; border-left: 5px solid #fbbc04; border-radius: 8px; padding: 15px;">
-        <div class="application-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <h3 style="margin: 0;">{{ app.serviceType }}</h3>
-          <span [class]="'status-badge ' + getStatusClass(app.status)">{{ app.status }}</span>
+    <div class="applications-section">
+      <h2>All Service Applications (Admin)</h2>
+      @if (allApplications.length === 0) {
+        <div class="no-applications">No applications submitted yet.</div>
+      } @else {
+        <div class="applications-list">
+          @for (app of allApplications; track app.id) {
+            <div class="application-card">
+              <div class="application-header">
+                <h3>{{ app.serviceType }}</h3>
+                <span [class]="'status-badge ' + getStatusClass(app.status)">{{ app.status }}</span>
+              </div>
+              @if (app.user) {
+                <p class="applicant-info"><strong>Applicant:</strong> {{ app.user.fullName }} ({{ app.user.email }})</p>
+              }
+              @if (app.additionalInfo) {
+                <p class="additional-info">{{ app.additionalInfo }}</p>
+              }
+              <p class="submitted-date">Submitted: {{ formatDate(app.submittedAt) }}</p>
+              <div class="admin-actions">
+                <button (click)="updateApplicationStatus(app.id, 'APPROVED')" class="btn-approve" [disabled]="app.status === 'APPROVED'">Approve</button>
+                <button (click)="updateApplicationStatus(app.id, 'REJECTED')" class="btn-reject" [disabled]="app.status === 'REJECTED'">Reject</button>
+                <button (click)="updateApplicationStatus(app.id, 'PENDING')" class="btn-pending" [disabled]="app.status === 'PENDING'">Reset to Pending</button>
+              </div>
+            </div>
+          }
         </div>
-        <p style="margin: 5px 0;"><strong>Applicant:</strong> {{ app.user?.fullName }} ({{ app.user?.email }})</p>
-        <p style="margin: 5px 0; background: #f9f9f9; padding: 10px; border-radius: 4px; font-style: italic;">"{{ app.additionalInfo || 'No additional info provided.' }}"</p>
-        <p style="margin: 5px 0; color: #888; font-size: 0.8em;">Submitted: {{ formatDate(app.submittedAt) }}</p>
-
-        <div class="admin-actions" style="margin-top: 15px; display: flex; gap: 10px;">
-          <button (click)="updateApplicationStatus(app.id, 'APPROVED')" [disabled]="app.status === 'APPROVED'" style="background: #34a853; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Approve</button>
-          <button (click)="updateApplicationStatus(app.id, 'REJECTED')" [disabled]="app.status === 'REJECTED'" style="background: #d93025; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Reject</button>
-        </div>
-      </div>
       }
     </div>
-    }
-  </div>
   } @else if (myApplications.length > 0) {
-  <div class="applications-section">
-    <h2>My Applications Tracker</h2>
-    <p style="color: #666; margin-bottom: 20px;">You will be notified here if your applications are approved or rejected by the barangay admin.</p>
-    <div class="applications-list" style="display: flex; flex-direction: column; gap: 15px;">
-      @for (app of myApplications; track app.id) {
-      <div class="application-card" style="background: white; border: 1px solid #ddd; border-left: 5px solid #4285F4; border-radius: 8px; padding: 15px;">
-        <div class="application-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <h3 style="margin: 0;">{{ app.serviceType }}</h3>
-          <span [class]="'status-badge ' + getStatusClass(app.status)">{{ app.status }}</span>
-        </div>
-        @if (app.status === 'APPROVED') {
-        <div style="background: #e6f4ea; color: #1e8e3e; padding: 10px; border-radius: 4px; margin-bottom: 10px; font-size: 0.9em;">
-          ✅ Notification: Your application was approved!
-        </div>
-        } @else if (app.status === 'REJECTED') {
-        <div style="background: #fce8e6; color: #d93025; padding: 10px; border-radius: 4px; margin-bottom: 10px; font-size: 0.9em;">
-          ❌ Notification: Your application was rejected. Please contact the barangay hall for details.
-        </div>
+    <div class="applications-section">
+      <h2>My Applications</h2>
+      <div class="applications-list">
+        @for (app of myApplications; track app.id) {
+          <div class="application-card">
+            <div class="application-header">
+              <h3>{{ app.serviceType }}</h3>
+              <span [class]="'status-badge ' + getStatusClass(app.status)">{{ app.status }}</span>
+            </div>
+            @if (app.additionalInfo) {
+              <p class="additional-info">{{ app.additionalInfo }}</p>
+            }
+            <p class="submitted-date">Submitted: {{ formatDate(app.submittedAt) }}</p>
+          </div>
         }
-        <p style="margin: 5px 0; color: #888; font-size: 0.8em;">Submitted: {{ formatDate(app.submittedAt) }}</p>
       </div>
-      }
     </div>
-  </div>
   }
 </div>
