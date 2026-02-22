@@ -10,74 +10,44 @@ public class Service {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Column(nullable = false, unique = true)
     private String name;
-    
+
     @Column(columnDefinition = "TEXT")
     private String description;
-    
+
     private String imageUrl;
-    
+
+    // NEW: Replaced isActive with serviceStatus
     @Column(nullable = false)
-    private boolean isActive = true;
-    
+    private String serviceStatus = "ONGOING"; // UPCOMING, ONGOING, FINISHED, CANCELLED
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-        name = "service_participants",
-        joinColumns = @JoinColumn(name = "service_id"),
-        inverseJoinColumns = @JoinColumn(name = "user_id")
+            name = "service_participants",
+            joinColumns = @JoinColumn(name = "service_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
     )
     private Set<User> participants = new HashSet<>();
 
-    public Service() {
-    }
+    public Service() {}
 
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getName() {
-        return name;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public String getServiceStatus() { return serviceStatus; }
+    public void setServiceStatus(String serviceStatus) { this.serviceStatus = serviceStatus; }
 
-    public String getDescription() {
-        return description;
-    }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public boolean isActive() {
-        return isActive;
-    }
-
-    public void setActive(boolean active) {
-        isActive = active;
-    }
-
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
-    }
-
-    public Set<User> getParticipants() {
-        return participants;
-    }
-
-    public void setParticipants(Set<User> participants) {
-        this.participants = participants;
-    }
+    public Set<User> getParticipants() { return participants; }
+    public void setParticipants(Set<User> participants) { this.participants = participants; }
 }
