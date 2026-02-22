@@ -49,6 +49,8 @@ public class AnnouncementService {
         return announcementRepository.save(announcement);
     }
 
+
+
     public Optional<Announcement> updateAnnouncement(Long id, Map<String, String> request) {
         return announcementRepository.findById(id).map(announcement -> {
             announcement.setTitle(request.get("title"));
@@ -60,6 +62,17 @@ public class AnnouncementService {
 
             if (request.containsKey("category") && !request.get("category").isEmpty()) {
                 announcement.setCategory(AnnouncementCategory.valueOf(request.get("category").toUpperCase()));
+            }
+
+            if (request.containsKey("eventDate")) {
+                String dateStr = request.get("eventDate");
+                if (dateStr != null && !dateStr.isEmpty()) {
+                    // Parse the new date if provided
+                    announcement.setEventDate(LocalDateTime.parse(dateStr));
+                } else {
+                    // If the admin clears the date, set it to null in the database
+                    announcement.setEventDate(null);
+                }
             }
 
             return announcementRepository.save(announcement);

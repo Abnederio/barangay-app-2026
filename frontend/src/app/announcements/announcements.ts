@@ -117,6 +117,8 @@ export class Announcements implements OnInit, OnDestroy {
 
   loadAnnouncements(): void {
     this.isLoading = true;
+    this.error = '';
+
     const url = this.activeCategoryFilter
       ? `/api/public/announcements/${this.activeCategoryFilter}`
       : `/api/public/announcements`;
