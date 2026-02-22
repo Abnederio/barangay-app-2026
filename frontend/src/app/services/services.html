@@ -2,228 +2,332 @@
   <div class="header">
     <h1>🏛️ Barangay Services</h1>
     @if (isAdmin) {
-      <button (click)="showServiceForm = !showServiceForm; editingService = null" class="btn-primary">
-        {{ showServiceForm ? 'Cancel' : '+ Manage Services' }}
-      </button>
+    <button (click)="showServiceForm = !showServiceForm; editingService = null" class="btn-primary">
+      {{ showServiceForm ? 'Cancel' : '+ Manage Services' }}
+    </button>
     }
   </div>
 
   <div class="search-bar">
-    <input
-      type="text"
-      [(ngModel)]="searchQuery"
-      (input)="onSearchChange()"
-      placeholder="🔍 Search services..."
-      class="search-input"
-    />
+    <input type="text" [(ngModel)]="searchQuery" (input)="onSearchChange()" placeholder="🔍 Search services..." class="search-input" />
   </div>
 
   @if (showServiceForm && isAdmin) {
-    <div class="service-management-form">
-      <h2>{{ editingService ? 'Edit Service' : 'Add New Service' }}</h2>
-      <div class="form-group">
-        <label>Service Name *</label>
-        <input type="text" [(ngModel)]="newService.name" [class.error]="formErrors['name']" />
-        @if (formErrors['name']) {
-          <span class="error-text">{{ formErrors['name'] }}</span>
+  <div class="service-management-form">
+    <h2>{{ editingService ? 'Edit Service' : 'Add New Service' }}</h2>
+    <div class="form-group">
+      <label>Service Name *</label>
+      <input type="text" [(ngModel)]="newService.name" [class.error]="formErrors['name']" />
+      @if (formErrors['name']) { <span class="error-text">{{ formErrors['name'] }}</span> }
+    </div>
+
+    <div class="form-group">
+      <label>Service Status</label>
+      <select [(ngModel)]="newService.serviceStatus">
+        <option value="UPCOMING">Upcoming</option>
+        <option value="ONGOING">On-going</option>
+        <option value="FINISHED">Finished</option>
+        <option value="CANCELLED">Cancelled</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Description</label>
+      <textarea [(ngModel)]="newService.description" rows="4"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Banner Image (Optional)</label>
+      <input type="file" accept="image/*" (change)="onImageSelected($event)" />
+      @if (imagePreview) {
+      <div class="image-preview">
+        <img [src]="imagePreview" alt="Preview" />
+        @if (!newService.imageUrl) {
+        <button type="button" (click)="uploadImage()" [disabled]="isUploadingImage" class="btn-secondary">{{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}</button>
         }
+        <button type="button" (click)="removeImage()" class="btn-secondary">Remove</button>
       </div>
-      <div class="form-group">
-        <label>Description</label>
-        <textarea [(ngModel)]="newService.description" rows="4"></textarea>
-      </div>
-      <div class="form-group">
-        <label>Image (Optional)</label>
-        <input type="file" accept="image/*" (change)="onImageSelected($event)" />
-        @if (imagePreview) {
-          <div class="image-preview">
-            <img [src]="imagePreview" alt="Preview" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
-            @if (!newService.imageUrl) {
-              <button type="button" (click)="uploadImage()" [disabled]="isUploadingImage" class="btn-secondary" style="margin-top: 5px;">
-                {{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}
-              </button>
-            }
-            <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px; margin-left: 5px;">Remove</button>
-          </div>
-        }
-        @if (newService.imageUrl && !imagePreview) {
-          <div class="image-preview">
-            <img [src]="newService.imageUrl" alt="Current image" style="max-width: 200px; max-height: 200px; margin-top: 10px;" />
-            <button type="button" (click)="removeImage()" class="btn-secondary" style="margin-top: 5px;">Remove</button>
-          </div>
-        }
-      </div>
-      <button (click)="saveService()" class="btn-primary">{{ editingService ? 'Update Service' : 'Create Service' }}</button>
-      @if (editingService) {
-        <button (click)="cancelServiceEdit()" class="btn-secondary">Cancel</button>
       }
     </div>
+    <div class="form-actions">
+      <button (click)="saveService()" class="btn-primary">{{ editingService ? 'Update Service' : 'Create Service' }}</button>
+      @if (editingService) { <button (click)="cancelServiceEdit()" class="btn-secondary">Cancel</button> }
+    </div>
+  </div>
   }
 
   @if (showApplicationForm) {
-    <div class="application-form">
-      <h2>Apply for {{ selectedService }}</h2>
-      @if (successMessage) {
-        <div class="success-message">{{ successMessage }}</div>
-      }
-      @if (formErrors['general']) {
-        <div class="error-message">{{ formErrors['general'] }}</div>
-      }
-      <form (ngSubmit)="submitApplication()">
-        <div class="form-group">
-          <label>Additional Information</label>
-          <textarea
-            [(ngModel)]="additionalInfo"
-            name="additionalInfo"
-            rows="6"
-            placeholder="Please provide any additional information or requirements..."
-          ></textarea>
-        </div>
-        <div class="form-actions">
-          <button type="submit" class="btn-primary">Submit Application</button>
-          <button type="button" (click)="showApplicationForm = false" class="btn-secondary">Cancel</button>
-        </div>
-      </form>
-    </div>
-  }
+  <div class="application-form-container">
+    <h2>📝 Application Form: {{ selectedService }}</h2>
+    <p class="form-subtitle">Please fill out the detailed form below. Required fields are marked with *</p>
 
-  @if (isAdmin) {
-    <div class="services-section">
-      <h2>Manage Services</h2>
-      @if (isLoading) {
-        <div class="loading">Loading services...</div>
-      } @else if (error) {
-        <div class="error">{{ error }}</div>
-      } @else if (filteredServices.length === 0) {
-        <div class="no-services">
-          @if (searchQuery) {
-            <p>No services found matching "{{ searchQuery }}"</p>
-          } @else {
-            <p>No services available. Create one to get started.</p>
-          }
-        </div>
-      } @else {
-        <div class="services-list">
-          @for (service of filteredServices; track service.id) {
-            <div class="service-card">
-              @if (service.imageUrl) {
-                <img [src]="service.imageUrl" alt="{{ service.name }}" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;" />
-              }
-              <h3>{{ service.name }}</h3>
-              @if (service.description) {
-                <p class="service-description">{{ service.description }}</p>
-              }
-              @if (service.participants && service.participants.length > 0) {
-                <div class="participants-section">
-                  <h4>Participants ({{ service.participants.length }})</h4>
-                  <ul class="participants-list">
-                    @for (participant of service.participants; track participant.id) {
-                      <li>
-                        {{ participant.fullName }} ({{ participant.email }})
-                        <button (click)="removeParticipant(service.id, participant.id)" class="btn-remove" style="margin-left: 10px; padding: 2px 8px; font-size: 12px;">Remove</button>
-                      </li>
-                    }
-                  </ul>
-                </div>
-              } @else {
-                <div class="participants-section">
-                  <p class="no-participants">No participants yet.</p>
-                </div>
-              }
-              <div class="service-actions">
-                <button (click)="startEditService(service)" class="btn-edit">Edit</button>
-                <button (click)="deleteService(service.id)" class="btn-delete">Delete</button>
-              </div>
-            </div>
-          }
-        </div>
-      }
-    </div>
-  } @else {
-    <div class="services-section">
-      <h2>Available Services</h2>
-      @if (isLoading) {
-        <div class="loading">Loading services...</div>
-      } @else if (error) {
-        <div class="error">{{ error }}</div>
-      } @else if (filteredServices.length === 0) {
-        <div class="no-services">
-          @if (searchQuery) {
-            <p>No services found matching "{{ searchQuery }}"</p>
-          } @else {
-            <p>No services available at this time.</p>
-          }
-        </div>
-      } @else {
-        <div class="services-list">
-          @for (service of filteredServices; track service.id) {
-            <div class="service-card">
-              @if (service.imageUrl) {
-                <img [src]="service.imageUrl" alt="{{ service.name }}" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;" />
-              }
-              <h3>{{ service.name }}</h3>
-              @if (service.description) {
-                <p class="service-description">{{ service.description }}</p>
-              }
-              @if (isParticipant(service)) {
-                <button (click)="leaveService(service.id)" class="btn-secondary">Leave Service</button>
-              } @else {
-                <button (click)="joinService(service.id)" class="btn-secondary">Join Service</button>
-              }
-            </div>
-          }
-        </div>
-      }
-    </div>
-  }
+    @if (formErrors['general']) { <div class="error-banner">{{ formErrors['general'] }}</div> }
 
-  @if (isAdmin) {
-    <div class="applications-section">
-      <h2>All Service Applications (Admin)</h2>
-      @if (allApplications.length === 0) {
-        <div class="no-applications">No applications submitted yet.</div>
-      } @else {
-        <div class="applications-list">
-          @for (app of allApplications; track app.id) {
-            <div class="application-card">
-              <div class="application-header">
-                <h3>{{ app.serviceType }}</h3>
-                <span [class]="'status-badge ' + getStatusClass(app.status)">{{ app.status }}</span>
-              </div>
-              @if (app.user) {
-                <p class="applicant-info"><strong>Applicant:</strong> {{ app.user.fullName }} ({{ app.user.email }})</p>
-              }
-              @if (app.additionalInfo) {
-                <p class="additional-info">{{ app.additionalInfo }}</p>
-              }
-              <p class="submitted-date">Submitted: {{ formatDate(app.submittedAt) }}</p>
-              <div class="admin-actions">
-                <button (click)="updateApplicationStatus(app.id, 'APPROVED')" class="btn-approve" [disabled]="app.status === 'APPROVED'">Approve</button>
-                <button (click)="updateApplicationStatus(app.id, 'REJECTED')" class="btn-reject" [disabled]="app.status === 'REJECTED'">Reject</button>
-                <button (click)="updateApplicationStatus(app.id, 'PENDING')" class="btn-pending" [disabled]="app.status === 'PENDING'">Reset to Pending</button>
-              </div>
-            </div>
-          }
-        </div>
-      }
-    </div>
-  } @else if (myApplications.length > 0) {
-    <div class="applications-section">
-      <h2>My Applications</h2>
-      <div class="applications-list">
-        @for (app of myApplications; track app.id) {
-          <div class="application-card">
-            <div class="application-header">
-              <h3>{{ app.serviceType }}</h3>
-              <span [class]="'status-badge ' + getStatusClass(app.status)">{{ app.status }}</span>
-            </div>
-            @if (app.additionalInfo) {
-              <p class="additional-info">{{ app.additionalInfo }}</p>
-            }
-            <p class="submitted-date">Submitted: {{ formatDate(app.submittedAt) }}</p>
+    <form (ngSubmit)="submitApplication()">
+
+      <div class="form-section">
+        <h3>1. Personal Information</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>First Name *</label>
+            <input type="text" [(ngModel)]="applicationData.firstName" name="fName" [class.error]="formErrors['firstName']">
           </div>
+          <div class="form-group">
+            <label>Middle Name</label>
+            <input type="text" [(ngModel)]="applicationData.middleName" name="mName">
+          </div>
+          <div class="form-group">
+            <label>Last Name *</label>
+            <input type="text" [(ngModel)]="applicationData.lastName" name="lName" [class.error]="formErrors['lastName']">
+          </div>
+          <div class="form-group">
+            <label>Suffix (e.g. Jr, Sr)</label>
+            <input type="text" [(ngModel)]="applicationData.suffix" name="suffix">
+          </div>
+          <div class="form-group">
+            <label>Birthday</label>
+            <input type="date" [(ngModel)]="applicationData.birthday" name="bday">
+          </div>
+          <div class="form-group">
+            <label>Sex</label>
+            <select [(ngModel)]="applicationData.sex" name="sex">
+              <option value="">Select...</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Civil Status</label>
+            <select [(ngModel)]="applicationData.civilStatus" name="civilStatus">
+              <option value="">Select...</option>
+              <option value="Single">Single</option>
+              <option value="Married">Married</option>
+              <option value="Widowed">Widowed</option>
+              <option value="Separated">Separated</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3>2. Contact & Socio-Demographics</h3>
+        <div class="form-grid">
+          <div class="form-group" style="grid-column: span 2;">
+            <label>Complete Address</label>
+            <input type="text" [(ngModel)]="applicationData.address" name="address">
+          </div>
+          <div class="form-group">
+            <label>Purok / Sitio</label>
+            <input type="text" [(ngModel)]="applicationData.purokOrSitio" name="purok">
+          </div>
+          <div class="form-group">
+            <label>Contact Number</label>
+            <input type="text" [(ngModel)]="applicationData.contactNumber" name="contact">
+          </div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" [(ngModel)]="applicationData.emailAddress" name="email">
+          </div>
+          <div class="form-group">
+            <label>Years of Residency</label>
+            <input type="number" [(ngModel)]="applicationData.yearsOfResidency" name="residency">
+          </div>
+          <div class="form-group">
+            <label>Occupation</label>
+            <input type="text" [(ngModel)]="applicationData.occupation" name="occupation">
+          </div>
+          <div class="form-group">
+            <label>Monthly Income</label>
+            <select [(ngModel)]="applicationData.monthlyIncome" name="income">
+              <option value="">Select...</option>
+              <option value="Below 10k">Below ₱10,000</option>
+              <option value="10k - 20k">₱10,000 - ₱20,000</option>
+              <option value="20k - 30k">₱20,000 - ₱30,000</option>
+              <option value="Above 30k">Above ₱30,000</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Registered Voter here?</label>
+            <select [(ngModel)]="applicationData.isRegisteredVoter" name="voter">
+              <option [ngValue]="true">Yes</option>
+              <option [ngValue]="false">No</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Precinct Number (If Yes)</label>
+            <input type="text" [(ngModel)]="applicationData.precinctNumber" name="precinct">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3>3. Request Details & Documents</h3>
+        <div class="form-group">
+          <label>Purpose of Request *</label>
+          <input type="text" [(ngModel)]="applicationData.purpose" name="purpose" placeholder="e.g. For Employment, Bank Requirement..." [class.error]="formErrors['purpose']">
+        </div>
+        <div class="form-group">
+          <label>Additional Notes / Requests</label>
+          <textarea [(ngModel)]="additionalInfo" name="additionalInfo" rows="3" placeholder="Any other details we should know?"></textarea>
+        </div>
+
+        <div class="form-group id-upload-box">
+          <label>Upload Valid ID (Optional but recommended)</label>
+          <input type="file" accept="image/*" (change)="onIdSelected($event)" />
+          @if (idPreview) {
+          <div class="image-preview id-preview">
+            <img [src]="idPreview" alt="ID Preview" />
+            <button type="button" (click)="removeIdImage()" class="btn-secondary">Remove ID</button>
+          </div>
+          }
+        </div>
+      </div>
+
+      <div class="form-actions bottom-actions">
+        <button type="submit" class="btn-submit-app" [disabled]="isUploadingId">
+          {{ isUploadingId ? 'Uploading ID & Submitting...' : 'Submit Application' }}
+        </button>
+        <button type="button" (click)="showApplicationForm = false" class="btn-secondary">Cancel</button>
+      </div>
+    </form>
+  </div>
+  }
+
+  <div class="services-section">
+    <h2>Available Services</h2>
+    @if (isLoading) {
+    <div class="loading">Loading services...</div>
+    } @else if (filteredServices.length === 0) {
+    <div class="no-services">No services found.</div>
+    } @else {
+    <div class="services-list">
+      @for (service of filteredServices; track service.id) {
+      <div class="service-card">
+        @if (service.imageUrl) {
+        <img [src]="service.imageUrl" alt="{{ service.name }}" class="card-img" />
+        }
+        <div class="card-status">
+          <span [class]="'badge ' + getStatusClass(service.serviceStatus)">{{ service.serviceStatus }}</span>
+        </div>
+
+        <h3>{{ service.name }}</h3>
+        <p class="service-description">{{ service.description }}</p>
+
+        @if (isAdmin) {
+        <div class="service-actions">
+          <button (click)="startEditService(service)" class="btn-edit">Edit</button>
+          <button (click)="deleteService(service.id)" class="btn-delete">Delete</button>
+        </div>
+        } @else {
+        <div class="service-actions">
+          @if (hasApplied(service)) {
+          <button disabled class="btn-disabled">Application Pending/Approved</button>
+          } @else if (service.serviceStatus === 'CANCELLED' || service.serviceStatus === 'FINISHED') {
+          <button disabled class="btn-disabled">Service Closed</button>
+          } @else {
+          <button (click)="openApplicationForm(service)" class="btn-apply">Apply for Service</button>
+          }
+        </div>
         }
       </div>
+      }
     </div>
+    }
+  </div>
+
+  <hr class="section-divider" />
+
+  @if (isAdmin) {
+  <div class="applications-section">
+    <h2>📥 All Service Applications (Admin Review)</h2>
+    @if (allApplications.length === 0) {
+    <div class="no-applications">No applications submitted yet.</div>
+    } @else {
+    <div class="applications-list">
+      @for (app of allApplications; track app.id) {
+      <div class="application-card admin-card">
+        <div class="application-header">
+          <h3>{{ app.serviceType }}</h3>
+          <span [class]="'status-badge ' + getStatusClass(app.status)">{{ app.status }}</span>
+        </div>
+
+        <div class="applicant-summary">
+          <p><strong>Account:</strong> {{ app.user?.fullName }} ({{ app.user?.email }})</p>
+          <p><strong>Submitted:</strong> {{ formatDate(app.submittedAt) }}</p>
+        </div>
+
+        @if (app.serviceForm) {
+        <div class="detailed-form-data">
+          <h4>Form Details</h4>
+          <div class="data-grid">
+            <div><strong>Full Name:</strong> {{ app.serviceForm.firstName }} {{ app.serviceForm.middleName }} {{ app.serviceForm.lastName }} {{ app.serviceForm.suffix }}</div>
+            <div><strong>Gender/Civil:</strong> {{ app.serviceForm.sex }} | {{ app.serviceForm.civilStatus }}</div>
+            <div><strong>Birthday:</strong> {{ formatDate(app.serviceForm.birthday) }}</div>
+            <div><strong>Contact:</strong> {{ app.serviceForm.contactNumber }}</div>
+            <div style="grid-column: span 2;"><strong>Address:</strong> {{ app.serviceForm.address }} ({{ app.serviceForm.purokOrSitio }})</div>
+            <div><strong>Residency:</strong> {{ app.serviceForm.yearsOfResidency }} yrs</div>
+            <div><strong>Voter:</strong> {{ app.serviceForm.isRegisteredVoter ? 'Yes (' + app.serviceForm.precinctNumber + ')' : 'No' }}</div>
+            <div><strong>Income:</strong> {{ app.serviceForm.monthlyIncome || 'N/A' }}</div>
+            <div><strong>Occupation:</strong> {{ app.serviceForm.occupation || 'N/A' }}</div>
+            <div style="grid-column: span 2; background: #e8f0fe; padding: 5px; border-radius: 4px;">
+              <strong>Purpose:</strong> {{ app.serviceForm.purpose }}
+            </div>
+          </div>
+          @if (app.serviceForm.validIdUrl) {
+          <div class="attached-id">
+            <strong>Attached ID:</strong><br>
+            <a [href]="app.serviceForm.validIdUrl" target="_blank">
+              <img [src]="app.serviceForm.validIdUrl" alt="Valid ID" class="tiny-id-preview"/>
+            </a>
+          </div>
+          }
+        </div>
+        }
+
+        @if (app.additionalInfo) {
+        <div class="additional-notes">
+          <strong>Notes:</strong> "{{ app.additionalInfo }}"
+        </div>
+        }
+
+        <div class="admin-decision-actions">
+          <button (click)="updateApplicationStatus(app.id, 'APPROVED')" [disabled]="app.status === 'APPROVED'" class="btn-approve">Approve</button>
+          <button (click)="updateApplicationStatus(app.id, 'REJECTED')" [disabled]="app.status === 'REJECTED'" class="btn-reject">Reject</button>
+        </div>
+      </div>
+      }
+    </div>
+    }
+  </div>
+  }
+
+  @else if (myApplications.length > 0) {
+  <div class="applications-section">
+    <h2>📋 My Applications Tracker</h2>
+    <p class="tracker-subtitle">You will be notified here if your applications are approved or rejected.</p>
+    <div class="applications-list">
+      @for (app of myApplications; track app.id) {
+      <div class="application-card resident-card">
+        <div class="application-header">
+          <h3>{{ app.serviceType }}</h3>
+          <span [class]="'status-badge ' + getStatusClass(app.status)">{{ app.status }}</span>
+        </div>
+
+        @if (app.status === 'APPROVED') {
+        <div class="alert success-alert">✅ Your application was approved!</div>
+        } @else if (app.status === 'REJECTED') {
+        <div class="alert error-alert">❌ Your application was rejected. Please contact the barangay hall.</div>
+        } @else {
+        <div class="alert pending-alert">⏳ Your application is under review.</div>
+        }
+
+        @if (app.serviceForm) {
+        <p class="purpose-text"><strong>Purpose:</strong> {{ app.serviceForm.purpose }}</p>
+        }
+        <p class="submitted-date">Submitted: {{ formatDate(app.submittedAt) }}</p>
+      </div>
+      }
+    </div>
+  </div>
   }
 </div>

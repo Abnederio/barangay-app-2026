@@ -9,4 +9,5 @@ import java.util.List;
 public interface ServiceApplicationRepository extends JpaRepository<ServiceApplication, Long> {
     List<ServiceApplication> findByUserIdOrderBySubmittedAtDesc(Long userId);
     List<ServiceApplication> findAllByOrderBySubmittedAtDesc();
+    ServiceApplication findByUserId(Long userId);
 }

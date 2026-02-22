@@ -7,5 +7,5 @@ import java.util.List;
 
 @Repository
 public interface ServiceRepository extends JpaRepository<Service, Long> {
-    List<Service> findByIsActiveTrueOrderByNameAsc();
+    List<Service> findAllByOrderByNameAsc();
 }

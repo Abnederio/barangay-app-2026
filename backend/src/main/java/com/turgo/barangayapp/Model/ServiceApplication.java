@@ -21,6 +21,10 @@ public class ServiceApplication {
     
     @Column(nullable = false)
     private LocalDateTime submittedAt = LocalDateTime.now();
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "service_form_id", referencedColumnName = "id")
+    private ServiceForm serviceForm;
     
     @ManyToOne
     @JoinColumn(name = "user_id")
@@ -29,6 +33,14 @@ public class ServiceApplication {
     private boolean notificationSent = false;
 
     public ServiceApplication() {
+    }
+
+    public ServiceForm getServiceForm() {
+        return serviceForm;
+    }
+
+    public void setServiceForm(ServiceForm serviceForm) {
+        this.serviceForm = serviceForm;
     }
 
     public Long getId() {

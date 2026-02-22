@@ -19,14 +19,15 @@ public class Service {
 
     private String imageUrl;
 
+    // --- NEW: Replaced boolean isActive with String serviceStatus ---
     @Column(nullable = false)
-    private boolean isActive = true;
+    private String serviceStatus = "ONGOING"; // UPCOMING, ONGOING, FINISHED, CANCELLED
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-        name = "service_participants",
-        joinColumns = @JoinColumn(name = "service_id"),
-        inverseJoinColumns = @JoinColumn(name = "user_id")
+            name = "service_participants",
+            joinColumns = @JoinColumn(name = "service_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
     )
     private Set<User> participants = new HashSet<>();
 
@@ -57,12 +58,13 @@ public class Service {
         this.description = description;
     }
 
-    public boolean isActive() {
-        return isActive;
+    // --- NEW GETTER AND SETTER ---
+    public String getServiceStatus() {
+        return serviceStatus;
     }
 
-    public void setActive(boolean active) {
-        isActive = active;
+    public void setServiceStatus(String serviceStatus) {
+        this.serviceStatus = serviceStatus;
     }
 
     public String getImageUrl() {
