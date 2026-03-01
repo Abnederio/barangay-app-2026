@@ -27,7 +27,7 @@ export class IdleService {
 
     const isAdmin = this.http.isAdmin();
     // 2 minutes for admin (120s), 5 minutes for normal users (300s)
-    const idleTime = isAdmin ? 30 : 30;
+    const idleTime = isAdmin ? 120 : 300;
     const warningTime = this.WARNING_TIME;
     const idleSeconds = idleTime - warningTime;
 
